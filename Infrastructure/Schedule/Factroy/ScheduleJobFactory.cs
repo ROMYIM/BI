@@ -15,29 +15,30 @@ namespace Infrastructure.Schedule.Factroy
 
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<JobKey, IJob> _jobs;
+        private readonly ConcurrentDictionary<JobKey, IServiceScope> _scopes;
 
         public ScheduleJobFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
         {
             _container = serviceProvider;
-            _jobs = new ConcurrentDictionary<JobKey, IJob>();
+            _scopes = new ConcurrentDictionary<JobKey, IServiceScope>();
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
         public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler)
         {
-            if (_jobs.TryGetValue(bundle.JobDetail.Key, out var job)) return job;
-            else
+            var jobKey = bundle.JobDetail.Key;
+            if (!_scopes.TryGetValue(jobKey, out var scope))
             {
-                job =  _container.GetRequiredService(bundle.JobDetail.JobType) as IJob;
-                if (job != null) return job;
-                else throw new NullReferenceException("任务没有注册");
+                scope = _container.CreateScope();
+                _scopes.TryAdd(jobKey, scope);
             }
+            return scope.ServiceProvider.GetRequiredService(bundle.JobDetail.JobType) as IJob;
         }
 
         public void ReturnJob(IJob job)
         {
-            _logger.LogInformation("任务返回工厂。不知道有什么实际意义");
+            _logger.LogInformation("任务结束。");
         }
+
     }
 }

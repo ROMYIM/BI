@@ -1,13 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Domain.Schedule.Entities
 {
-    public enum JobType
+    public class JobType
     {
-        [Description("数据同步")]
-        DataSynchronization = 0
+        public string TypeName { get; set; }
+
+        public Type Type { get; set; }
+
+        public Type GetJobType()
+        {
+            if (Type == null)
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                Type = assembly.DefinedTypes.Where(t => t.FullName == TypeName).FirstOrDefault().AsType();
+            }
+
+            return Type;
+        }
     }
 }

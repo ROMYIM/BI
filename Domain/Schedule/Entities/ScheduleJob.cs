@@ -29,7 +29,7 @@ namespace Domain.Schedule.Entities
         public IJobDetail GetJob()
         {
 
-            return _jobDetail ??= JobBuilder.Create<DataSynchornizationJob>()
+            return _jobDetail ??= JobBuilder.Create(Type.GetJobType())
                 .WithIdentity(JobKey.Create(JobName))
                 .WithDescription("数据库同步")
                 .Build();

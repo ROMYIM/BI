@@ -46,8 +46,8 @@ namespace FlytexpressBI
                 JobName = "数据定时同步",
                 CreationTime = DateTime.Now,
                 Status = JobStatus.Init,
-                CronExpression = "0/5 * * * * ?",
-                Type = JobType.DataSynchronization
+                CronExpression = "* 0/5 * * * ?",
+                Type = new JobType { TypeName = "Domain.Schedule.Managers.DataSynchornizationJob" }
             });
 
             #endregion
@@ -72,6 +72,7 @@ namespace FlytexpressBI
             {
                 options.UseInternalServiceProvider(serviceProvider);
                 options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
+                options.EnableSensitiveDataLogging();
             });
 
             #endregion

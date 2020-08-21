@@ -22,7 +22,6 @@ namespace Infrastructure.Db.Contexts
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
                 optionsBuilder.UseNpgsql("Host=192.168.5.238;Port=5432;User ID=postgres;Password=postgres;Database=FlytBIDW;");
             }
         }

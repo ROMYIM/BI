@@ -32,7 +32,7 @@ namespace FlytexpressBI.Controllers
 
         public async ValueTask<User> Index(int id = 33324)
         {
-            var pgUser = new User();
+            var pgUser = await _flytBIDbContext.Users.FindAsync(id) ?? new User();
             var user = _mongoContext.FirstOrDefault<Users>(u => u.Id == id);
             if (user != null)
             {

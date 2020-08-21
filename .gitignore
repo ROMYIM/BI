@@ -1,0 +1,15 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/Core/obj
+/Domain/bin/Debug/netcoreapp3.1
+/Domain/obj
+/Core/bin/Debug/netcoreapp3.1
+/FlytexpressBI/bin/Debug/netcoreapp3.1
+/FlytexpressBI/obj
+/Infrastructure/bin/Debug/netcoreapp3.1
+/Infrastructure/obj
+/Infrastructure/Infrastructure - Backup.csproj
+/.vs
+/FlytexpressBI/.vs/FlytexpressBI

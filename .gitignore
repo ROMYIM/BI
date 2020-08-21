@@ -13,3 +13,5 @@
 /Infrastructure/Infrastructure - Backup.csproj
 /.vs
 /FlytexpressBI/.vs/FlytexpressBI
+/Application/bin/Debug/netcoreapp3.1
+/Application/obj

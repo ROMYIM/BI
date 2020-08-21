@@ -1,4 +1,5 @@
 ﻿using Infrastructure.Db.Dtoes.Mongo.Enums;
+using MongoDB.Bson.Serialization.Attributes;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace Infrastructure.Db.Dtoes.Mongo.Authorization.UserRolePermission
     [Serializable]
     [ProtoContract]
     [Table("Users")]
+    [BsonIgnoreExtraElements]
     public class Users
     {
         /// <summary> 

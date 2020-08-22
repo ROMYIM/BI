@@ -89,8 +89,10 @@ namespace FlytexpressBI
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseExceptionHandler("/Error");
             }
+
+            //app.UseExceptionHandler("/Error");
             app.UseStaticFiles();
 
             app.UseRouting();

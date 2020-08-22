@@ -37,7 +37,7 @@ namespace FlytexpressBI
         {
             #region 任务组件注册
 
-            services.AddTransient<DataSynchornizationJob>();
+            services.AddScoped<DataSynchornizationJob>();
             services.AddSingleton<IJobFactory, ScheduleJobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
             services.AddTransient(_ => new ScheduleJob
@@ -46,7 +46,7 @@ namespace FlytexpressBI
                 JobName = "数据定时同步",
                 CreationTime = DateTime.Now,
                 Status = JobStatus.Init,
-                CronExpression = "* 0/5 * * * ?",
+                CronExpression = "0/5 * * * * ?",
                 Type = new JobType { TypeName = "Domain.Schedule.Managers.DataSynchornizationJob" }
             });
 
@@ -54,8 +54,8 @@ namespace FlytexpressBI
 
             #region 后台服务组件注册
 
-            services.AddHostedService<StartupService>();
-            services.AddSingleton<IAutoBackgroundService, DataSynchronizationService>();
+            services.AddHostedService<DataSynchronizationService>();
+            //services.AddSingleton<IAutoStartupService, DataSynchronizationService>();
 
             #endregion
 

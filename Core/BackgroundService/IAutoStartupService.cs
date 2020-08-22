@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Core.BackgroundService
 {
-    public interface IAutoBackgroundService : IHostedService
+    public interface IAutoStartupService : IHostedService
     {
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Core.DataBase.Mongo;
 using Infrastructure.Db.Contexts;
+using Infrastructure.Schedule.Job;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
@@ -10,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Domain.Schedule.Managers
 {
-    public class DataSynchornizationJob : IJob
+    public class DataSynchornizationJob : IDetailJob
     {
         private readonly MongoDbContext _mongoDbContext;
 
@@ -28,10 +30,19 @@ namespace Domain.Schedule.Managers
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
+        IJobDetail IDetailJob.DetailInformation { get; set; }
+
         public Task Execute(IJobExecutionContext context)
         {
             _logger.LogInformation("定时任务调度");
             return Task.CompletedTask;
+        }
+
+        void IDisposable.Dispose()
+        {
+            _logger.LogInformation("定时任务释放资源");
+
+            _flytBIDbContext?.Dispose();
         }
     }
 }

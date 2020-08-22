@@ -13,9 +13,9 @@ namespace Infrastructure.BackgroundServices
     {
         private readonly ILogger _logger;
 
-        private readonly IEnumerable<IAutoBackgroundService> _services;
+        private readonly IEnumerable<IAutoStartupService> _services;
 
-        public StartupService(ILoggerFactory loggerFactory, IEnumerable<IAutoBackgroundService> services)
+        public StartupService(ILoggerFactory loggerFactory, IEnumerable<IAutoStartupService> services)
         {
             _logger = loggerFactory.CreateLogger(GetType());
             _services = services;

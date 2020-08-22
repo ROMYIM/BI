@@ -43,6 +43,7 @@ namespace FlytexpressBI.Controllers
                 pgUser.Roleds = user.RoleIds.ToJson();
 
                 await _flytBIDbContext.Users.AddAsync(pgUser);
+                await _flytBIDbContext.SaveChangesAsync();
             }
             return pgUser;
         }

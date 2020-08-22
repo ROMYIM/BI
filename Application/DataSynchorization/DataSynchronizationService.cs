@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Application.DataSynchonization.BackgroundServices
 {
-    public class DataSynchronizationService : IAutoBackgroundService
+    public class DataSynchronizationService : IAutoStartupService
     {
         private const string SchedeName = "数据同步";
 
@@ -43,6 +43,7 @@ namespace Application.DataSynchonization.BackgroundServices
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("服务启动");
+            _logger.LogInformation(DateTime.Now.ToString("G"));
 
             var jobDetail = _job.GetJob();
             var trigger = _job.GetTrigger();

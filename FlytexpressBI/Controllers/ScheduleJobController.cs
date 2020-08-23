@@ -28,12 +28,22 @@ namespace FlytexpressBI.Controllers
             _dataSyncService = dataSynchronizationService;
         }
 
+        [Route("stop")]
         public async Task<IActionResult> Stop()
         {
             var tokenSource = new CancellationTokenSource();
             await _dataSyncService?.StopAsync(tokenSource.Token);
             _logger.LogDebug("停止任务");
             return Ok("停止任务成功");
+        }
+
+        [Route("restart")]
+        public IActionResult Restart()
+        {
+            var delaySpan = TimeSpan.FromSeconds(10);
+            var tokenSource = new CancellationTokenSource();
+             _dataSyncService.RestartAsync(delaySpan, tokenSource.Token);
+            return RedirectToAction(actionName: "index", controllerName: "home");
         }
     }
 }

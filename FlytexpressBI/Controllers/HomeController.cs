@@ -29,6 +29,7 @@ namespace FlytexpressBI.Controllers
 
         public IActionResult Index()
         {
+            _logger.LogInformation("hello");
             return View();
         }
 

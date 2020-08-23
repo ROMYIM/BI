@@ -1,6 +1,7 @@
 using AspectCore.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using NLog.Web;
 
 namespace FlytexpressBI
 {
@@ -14,6 +15,7 @@ namespace FlytexpressBI
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseServiceProviderFactory(new DynamicProxyServiceProviderFactory())
+                .UseNLog()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

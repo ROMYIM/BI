@@ -66,7 +66,7 @@ namespace FlytexpressBI
                 options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
             }, contextLifetime: ServiceLifetime.Singleton, optionsLifetime: ServiceLifetime.Singleton);
 
-            services.AddEntityFrameworkNpgsql();
+            //services.AddEntityFrameworkNpgsql();
             services.AddDbContextPool<FlytBIDbContext>((serviceProvider, options) =>
             {
                 options.UseInternalServiceProvider(serviceProvider);

@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Application.Services.DataSynchonization;
+using Application.Services.DataSynchorization;
+using Core.BackgroundService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace FlytexpressBI.Controllers
 {
@@ -11,6 +16,24 @@ namespace FlytexpressBI.Controllers
     [ApiController]
     public class ScheduleJobController : ControllerBase
     {
+        private readonly ILogger _logger;
 
+        private readonly IDataSynchorizationService _dataSyncService;
+
+        public ScheduleJobController(
+            ILoggerFactory loggerFactory,
+            DataSynchronizationService dataSynchronizationService)
+        {
+            _logger = loggerFactory.CreateLogger(GetType());
+            _dataSyncService = dataSynchronizationService;
+        }
+
+        public async Task<IActionResult> Stop()
+        {
+            var tokenSource = new CancellationTokenSource();
+            await _dataSyncService?.StopAsync(tokenSource.Token);
+            _logger.LogDebug("停止任务");
+            return Ok("停止任务成功");
+        }
     }
 }

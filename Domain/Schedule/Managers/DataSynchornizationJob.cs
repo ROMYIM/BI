@@ -21,12 +21,12 @@ namespace Domain.Schedule.Managers
         private readonly ILogger _logger;
 
         public DataSynchornizationJob(
-            MongoDbContext mongoDbContext, 
-            FlytBIDbContext flytBIDbContext, 
+            MongoDbContext mongoDbContext,
+            IDataSynchronizationDbContxt flytBIDbContext, 
             ILoggerFactory loggerFactory)
         {
             _mongoDbContext = mongoDbContext;
-            _flytBIDbContext = flytBIDbContext;
+            _flytBIDbContext = flytBIDbContext as FlytBIDbContext;
             _logger = loggerFactory.CreateLogger(GetType());
         }
 

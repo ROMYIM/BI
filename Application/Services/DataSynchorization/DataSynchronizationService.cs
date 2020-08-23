@@ -1,4 +1,5 @@
-﻿using Core.BackgroundService;
+﻿using Application.Services.DataSynchorization;
+using Core.BackgroundService;
 using Domain.Schedule.Entities;
 using Domain.Schedule.Managers;
 using Microsoft.Extensions.Hosting;
@@ -12,9 +13,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Application.DataSynchonization.BackgroundServices
+namespace Application.Services.DataSynchonization
 {
-    public class DataSynchronizationService : IAutoStartupService
+    public class DataSynchronizationService : IDataSynchorizationService
     {
         private const string SchedeName = "数据同步";
 
@@ -57,7 +58,17 @@ namespace Application.DataSynchonization.BackgroundServices
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("服务关闭");
-            await Scheduler?.Shutdown(cancellationToken);
+            if (Scheduler.IsStarted)
+            {
+                await Scheduler?.Shutdown(cancellationToken);
+            }
+        }
+
+        async Task IDataSynchorizationService.RestartAsync(TimeSpan delaySpan, CancellationToken cancellationToken)
+        {
+            await StopAsync(cancellationToken);
+            await Task.Delay(delaySpan);
+            _ = StartAsync(cancellationToken);
         }
     }
 }

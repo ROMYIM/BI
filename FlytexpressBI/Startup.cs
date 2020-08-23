@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Application.DataSynchonization.BackgroundServices;
+using Application.Services.DataSynchonization;
+using Application.Services.DataSynchorization;
 using Core.BackgroundService;
-using Core.DataBase.Mongo;
 using Core.Extensions.DependencyInjection;
 using Domain.Schedule.Entities;
 using Domain.Schedule.Managers;
@@ -54,18 +51,20 @@ namespace FlytexpressBI
 
             #region 后台服务组件注册
 
-            services.AddHostedService<DataSynchronizationService>();
-            //services.AddSingleton<IAutoStartupService, DataSynchronizationService>();
+            services.AddHostedService<StartupService>();
+            services.AddSingleton<DataSynchronizationService>();
+            services.AddSingleton<IDataSynchorizationService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
+            services.AddSingleton<IAutoStartupService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
 
             #endregion
 
             #region 数据库组件注册
             services.AddMongoDbContext(Configuration.GetSection("ConnectionStrings:Mongo"));
 
-            //services.AddDbContext<FlytBIDbContext>(options =>
-            //{
-            //    options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
-            //}, contextLifetime: ServiceLifetime.Singleton, optionsLifetime: ServiceLifetime.Singleton);
+            services.AddDbContext<IDataSynchronizationDbContxt, FlytBIDbContext>(options =>
+            {
+                options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
+            }, contextLifetime: ServiceLifetime.Singleton, optionsLifetime: ServiceLifetime.Singleton);
 
             services.AddEntityFrameworkNpgsql();
             services.AddDbContextPool<FlytBIDbContext>((serviceProvider, options) =>

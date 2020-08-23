@@ -9,8 +9,6 @@ using FlytexpressBI.Models;
 using Core.DataBase.Mongo;
 using Infrastructure.Db.Contexts;
 using Infrastructure.Db.Dotes.Mongo.OrderEntity;
-using Infrastructure.BackgroundServices;
-using Application.DataSynchonization.BackgroundServices;
 
 namespace FlytexpressBI.Controllers
 {

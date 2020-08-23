@@ -27,18 +27,19 @@ namespace Infrastructure.Schedule.Factroy
 
         public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler)
         {
-            var jobKey = bundle.JobDetail.Key;
-            if (!_jobScopes.TryGetValue(jobKey, out var scope))
-            {
-                scope = _container.CreateScope();
-                _jobScopes.TryAdd(jobKey, scope);
-            }
+            //var jobKey = bundle.JobDetail.Key;
+            //if (!_jobScopes.TryGetValue(jobKey, out var scope))
+            //{
+            //    scope = _container.CreateScope();
+            //    _jobScopes.TryAdd(jobKey, scope);
+            //}
 
-            var job = scope.ServiceProvider.GetRequiredService(bundle.JobDetail.JobType) as IDetailJob;
-            job.DetailInformation = bundle.JobDetail;
+            //var job = scope.ServiceProvider.GetRequiredService(bundle.JobDetail.JobType) as IDetailJob;
+            //job.DetailInformation = bundle.JobDetail;
 
-            _logger.LogInformation("任务开始。{}", DateTime.Now.ToString("G"));
-            return job;
+
+            _logger.LogDebug("任务开始。{}", DateTime.Now.ToString("G"));
+            return _container.GetRequiredService(bundle.JobDetail.JobType) as IJob;
         }
 
         public void ReturnJob(IJob job)
@@ -47,7 +48,7 @@ namespace Infrastructure.Schedule.Factroy
             //{
             //    scope.Dispose();
             //}
-            _logger.LogInformation("任务结束。{}", DateTime.Now.ToString("G"));
+            _logger.LogDebug("任务结束。{}", DateTime.Now.ToString("G"));
         }
 
     }

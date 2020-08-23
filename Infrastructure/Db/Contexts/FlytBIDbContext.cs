@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Infrastructure.Db.Contexts
 {
-    public partial class FlytBIDbContext : DbContext
+    public partial class FlytBIDbContext : DbContext, IDataSynchronizationDbContxt
     {
 
         public FlytBIDbContext(DbContextOptions<FlytBIDbContext> options)

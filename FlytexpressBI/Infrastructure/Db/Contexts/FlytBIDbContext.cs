@@ -5,8 +5,11 @@ using Infrastructure.Db.Dtoes.Pg;
 
 namespace Infrastructure.Db.Contexts
 {
-    public partial class FlytBIDbContext : DbContext, IDataSynchronizationDbContxt
+    public partial class FlytBIDbContext : DbContext
     {
+        public FlytBIDbContext()
+        {
+        }
 
         public FlytBIDbContext(DbContextOptions<FlytBIDbContext> options)
             : base(options)

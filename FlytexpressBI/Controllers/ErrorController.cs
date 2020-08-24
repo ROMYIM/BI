@@ -40,7 +40,7 @@ namespace FlytexpressBI.Controllers
             model.ShowerDeveloperMessage = BuildDeveloperErrorMessage();
             if (error is ApplicationException)
             {
-                model.ShowerUserMessage = error.Message;
+                model.ShowerUserMessage = error?.Message;
             }
 
             var requestPath = errorFeature?.Path ?? HttpContext.Features.Get<IStatusCodeReExecuteFeature>()?.OriginalPath;
@@ -48,6 +48,9 @@ namespace FlytexpressBI.Controllers
             model.Environment = _enviroment;
             model.RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
             model.HttpStatusCode = HttpContext.Response.StatusCode;
+
+            _logger.LogError("请求：{}\n 错误信息：{}", requestPath, model.ShowerDeveloperMessage);
+
             return model;
 
             string BuildDeveloperErrorMessage()
@@ -55,11 +58,16 @@ namespace FlytexpressBI.Controllers
                 if (error == null) return "请刷新页面或重新请求";
 
                 var messageStack = new Stack<string>();
-                messageStack.Push(error.StackTrace);
+                var stackInfoStack = new Stack<string>();
+
+                messageStack.Push(error.Message);
+                stackInfoStack.Push(error.StackTrace);
+
                 var innerError = error.InnerException;
                 while (innerError != null)
                 {
-                    messageStack.Push(innerError.StackTrace);
+                    messageStack.Push(innerError.Message);
+                    stackInfoStack.Push(innerError.StackTrace);
                     innerError = innerError.InnerException;
                 }
 
@@ -67,6 +75,11 @@ namespace FlytexpressBI.Controllers
                 while (messageStack.Count > 0)
                 {
                     developerMessageBuilder.Append(messageStack.Pop());
+                }
+                developerMessageBuilder.Append(string.Empty);
+                while (stackInfoStack.Count > 0)
+                {
+                    developerMessageBuilder.Append(stackInfoStack.Pop());
                 }
                 return developerMessageBuilder.ToString();
             }

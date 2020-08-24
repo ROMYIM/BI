@@ -5,9 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Infrastructure\Db\Contexts\**" />
     <Compile Remove="log\**" />
+    <Content Remove="Infrastructure\Db\Contexts\**" />
     <Content Remove="log\**" />
+    <EmbeddedResource Remove="Infrastructure\Db\Contexts\**" />
     <EmbeddedResource Remove="log\**" />
+    <None Remove="Infrastructure\Db\Contexts\**" />
     <None Remove="log\**" />
   </ItemGroup>
 
@@ -29,6 +33,10 @@
     <Content Update="nlog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Db\Dtoes\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

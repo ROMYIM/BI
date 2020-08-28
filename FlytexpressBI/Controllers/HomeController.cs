@@ -29,8 +29,8 @@ namespace FlytexpressBI.Controllers
 
         public IActionResult Index()
         {
-            _logger.LogInformation("hello");
-            return View();
+            var list = _mongoDbContext.Find<OrderParent>(o => o.Id == "F802672006160003").FirstOrDefault();
+            return Json(list);
         }
 
         public IActionResult Privacy()

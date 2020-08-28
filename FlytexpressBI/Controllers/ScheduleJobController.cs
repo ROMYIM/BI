@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
 using Core.BackgroundService;
+using Domain.Schedule.Managers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -18,14 +20,18 @@ namespace FlytexpressBI.Controllers
     {
         private readonly ILogger _logger;
 
+        private readonly DataSynchornizationJob _synchronizationJob;
+
         private readonly IDataSynchorizationService _dataSyncService;
 
         public ScheduleJobController(
             ILoggerFactory loggerFactory,
+            DataSynchornizationJob job,
             DataSynchronizationService dataSynchronizationService)
         {
             _logger = loggerFactory.CreateLogger(GetType());
             _dataSyncService = dataSynchronizationService;
+            _synchronizationJob = job;
         }
 
         [Route("stop")]
@@ -44,6 +50,13 @@ namespace FlytexpressBI.Controllers
             var tokenSource = new CancellationTokenSource();
              _dataSyncService.RestartAsync(delaySpan, tokenSource.Token);
             return RedirectToAction(actionName: "index", controllerName: "home");
+        }
+
+        [Route("")]
+        public IActionResult Index()
+        {
+            
+            return Ok();
         }
     }
 }

@@ -2,6 +2,7 @@
 using Core.BackgroundService;
 using Domain.Schedule.Entities;
 using Domain.Schedule.Managers;
+using Infrastructure.Schedule.Service;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Quartz;
@@ -64,11 +65,16 @@ namespace Application.Services.DataSynchonization
             }
         }
 
-        async Task IDataSynchorizationService.RestartAsync(TimeSpan delaySpan, CancellationToken cancellationToken)
+        async Task IScheduleService.RestartAsync(TimeSpan delaySpan, CancellationToken cancellationToken)
         {
             await StopAsync(cancellationToken);
             await Task.Delay(delaySpan);
             _ = StartAsync(cancellationToken);
+        }
+
+        Task IDataSynchorizationService.SynchronizeData(CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
     }
 }

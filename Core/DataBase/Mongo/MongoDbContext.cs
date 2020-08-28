@@ -72,6 +72,8 @@ namespace Core.DataBase.Mongo
             });
         }
 
+        public MongoDatabase Database { get => _client.GetServer().GetDatabase(_options.Database); }
+
         /// <summary>
         /// 构造函数。依赖注入选线参数
         /// </summary>

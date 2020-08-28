@@ -1,13 +1,19 @@
 using System;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
+using AutoMapper;
 using Core.BackgroundService;
 using Core.Extensions.DependencyInjection;
+using Domain.DataSynchronization.Managers;
 using Domain.Schedule.Entities;
 using Domain.Schedule.Managers;
-using Infrastructure.BackgroundServices;
 using Infrastructure.Db.Contexts;
+using Infrastructure.Db.Dtoes.Mongo.Bill;
+using Infrastructure.Db.Dtoes.Pg;
+using Infrastructure.Db.Mapper;
+using Infrastructure.Extensions.DependencyInjection;
 using Infrastructure.Schedule.Factroy;
+using Infrastructure.Schedule.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -32,9 +38,26 @@ namespace FlytexpressBI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            #region 本地缓存注册
+
+            services.AddDbDtoTypeCaches();
+
+            #endregion
+
+            #region AutoMapper注册
+
+            services.AddAutoMapper(configuration =>
+            {
+                configuration.AddProfile<DtoesMapperConfiguration>();
+            });
+
+            #endregion
+
             #region 任务组件注册
 
+            services.Configure<DataSynchronizationOptions>(Configuration.GetSection("DataSynchronization"));
             services.AddScoped<DataSynchornizationJob>();
+            services.AddTransient<UserMoneyRecordSynchronization>();
             services.AddSingleton<IJobFactory, ScheduleJobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
             services.AddTransient(_ => new ScheduleJob
@@ -51,7 +74,7 @@ namespace FlytexpressBI
 
             #region 后台服务组件注册
 
-            services.AddHostedService<StartupService>();
+            //services.AddHostedService<StartupService>();
             services.AddSingleton<DataSynchronizationService>();
             services.AddSingleton<IDataSynchorizationService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
             services.AddSingleton<IAutoStartupService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
@@ -61,12 +84,12 @@ namespace FlytexpressBI
             #region 数据库组件注册
             services.AddMongoDbContext(Configuration.GetSection("ConnectionStrings:Mongo"));
 
-            services.AddDbContext<IDataSynchronizationDbContxt, FlytBIDbContext>(options =>
-            {
-                options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
-            }, contextLifetime: ServiceLifetime.Singleton, optionsLifetime: ServiceLifetime.Singleton);
+            //services.AddDbContext<IDataSynchronizationDbContxt, FlytBIDbContext>(options =>
+            //{
+            //    options.UseNpgsql(Configuration.GetConnectionString("Npgsql"));
+            //}, contextLifetime: ServiceLifetime.Singleton, optionsLifetime: ServiceLifetime.Singleton);
 
-            //services.AddEntityFrameworkNpgsql();
+            services.AddEntityFrameworkNpgsql();
             services.AddDbContextPool<FlytBIDbContext>((serviceProvider, options) =>
             {
                 options.UseInternalServiceProvider(serviceProvider);

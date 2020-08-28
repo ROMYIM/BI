@@ -1,4 +1,5 @@
 ﻿using Core.BackgroundService;
+using Infrastructure.Schedule.Service;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Application.Services.DataSynchorization
 {
-    public interface IDataSynchorizationService : IAutoStartupService
+    public interface IDataSynchorizationService : IScheduleService
     {
-        Task RestartAsync(TimeSpan delaySpan, CancellationToken cancellationToken);
+        public Task SynchronizeData(CancellationToken token);
     }
 }

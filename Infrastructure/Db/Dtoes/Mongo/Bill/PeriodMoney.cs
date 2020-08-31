@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,6 +18,7 @@ namespace Infrastructure.Db.Dtoes.Mongo.Bill
         /// <summary>
         /// 对应账期内发生的金额
         /// </summary>
+        [BsonElement("Moeny")]
         public double Money { get; set; }
     }
 }

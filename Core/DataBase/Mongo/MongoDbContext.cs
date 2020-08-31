@@ -85,11 +85,13 @@ namespace Core.DataBase.Mongo
             {
                 AssignIdOnInsert = true,
                 //GuidRepresentation = GuidRepresentation.CSharpLegacy,
-                WriteConcern = WriteConcern.WMajority,
+                WriteConcern = WriteConcern.WMajority
             };
             _options = options.Value;
-            _client = new MongoClient(_options.ConnectionString);
+            _client = new MongoClient(new MongoUrl(_options.ConnectionString));
             _database = _client.GetDatabase(_options.Database);
+
+            if (!_options.Master) _collectionSettings.ReadPreference = new ReadPreference(ReadPreferenceMode.SecondaryPreferred);
         }
 
         //private void InitMember(string connStr, string database)

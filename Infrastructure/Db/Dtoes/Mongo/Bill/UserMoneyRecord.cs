@@ -1,5 +1,6 @@
 ﻿using Core.DataBase.Mongo.Models;
 using Infrastructure.Db.Dtoes.Mongo.Enums;
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -287,6 +288,7 @@ namespace Infrastructure.Db.Dtoes.Mongo.Bill
         /// 账期金额列表
         /// </summary>
         [NotMapped]
+        [BsonElement("PeriodMoenys")]
         public List<PeriodMoney> PeriodMoneys { get; set; }
 
 

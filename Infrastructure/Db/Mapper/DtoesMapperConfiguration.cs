@@ -11,7 +11,7 @@ namespace Infrastructure.Db.Mapper
     {
         public DtoesMapperConfiguration()
         {
-            CreateMap<UserMoneyRecord, Usermoneyrecord>();
+            //CreateMap<UserMoneyRecord, Usermoneyrecord>();
         }
     }
 }

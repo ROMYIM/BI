@@ -75,8 +75,7 @@ namespace Domain.Schedule.Managers
                             collection.Skip(startIndex).Take(synchronizeCountPerTime).ToList();
                         var errors = new List<(BsonValue, string)>(documents.Count);
                         var insertData = new List<TPgSQL>(documents.Count);
-                        ICollection< (string, string, string, object, string)> pgErrors = 
-                            new List<(string, string, string, object, string)>();
+                   
 
                         /// 查询并转换为pg实体
                         foreach (var document in documents)
@@ -87,24 +86,7 @@ namespace Domain.Schedule.Managers
                                 var pgData = _dtpMapper.Map<TMongo, TPgSQL>(document);
                                 insertData.Add(pgData);
 
-                                //var pgEntity = pgEntityType.GetConstructors()[0].Invoke(default);
-                                //var properties = pgEntityType.GetProperties();
-                                //foreach (var element in document.Elements)
-                                //{
-                                //    if (element.Name == "_id")
-                                //    {
-                                //        id = element.Value;
-                                //        var idProperty = properties.Where(p => p.Name == "Id").First();
-                                //        idProperty.SetValue(pgEntity, element.GetValue(idProperty.PropertyType));
-                                //    }
-                                //    else
-                                //    {
-                                //        var property = properties.Where(p => p.Name.ToLower() == element.Name.ToLower()).FirstOrDefault();
-                                //        property?.SetValue(pgEntity, element.GetValue(property.PropertyType));
-                                //    }
-                                //}
-                                //insertData.Add(pgEntity);
-                                //await _flytBIDbContext.AddAsync(pgEntity);
+                                
                             }
                             catch (Exception ex)
                             {
@@ -114,7 +96,7 @@ namespace Domain.Schedule.Managers
 
                         }
 
-                        _flytBIDbContext.BatchInsert(insertData, ref pgErrors);
+                        _flytBIDbContext.BatchInsert(insertData);
 
                         ///提交事务，打印同步失败的数据
                         //await _flytBIDbContext.SaveChangesAsync();
@@ -165,8 +147,7 @@ namespace Domain.Schedule.Managers
                     var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCountPerTime).ToList();
                     var mongoErrors = new List<(BsonValue, string)>(documents.Count);
                     var insertData = new List<TPgSQL>(documents.Count);
-                    ICollection< (string, string, string, object, string)> pgErrors 
-                        = new List<(string, string, string, object, string)>(insertData.Count);
+                    var pgErrors = default((string, string, string, string));
 
                     /// 查询并转换为pg实体
                     foreach (var document in documents)
@@ -201,17 +182,13 @@ namespace Domain.Schedule.Managers
 
                     }
 
-                    _flytBIDbContext.BatchInsert(insertData, ref pgErrors);
+                    _flytBIDbContext.BatchInsert(insertData);
 
                     foreach (var error in mongoErrors)
                     {
                         _logger.LogError("id：{}\n异常：{}", error.Item1, error.Item2);
                     }
-
-                    foreach (var error in pgErrors)
-                    {
-                        _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", error.Item1, error.Item2, error.Item3, error.Item4, error.Item5);
-                    }
+                    _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", pgErrors.Item1, pgErrors.Item2, pgErrors.Item3, pgErrors.Item4);
 
                 }
 

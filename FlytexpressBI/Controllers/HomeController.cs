@@ -9,6 +9,7 @@ using FlytexpressBI.Models;
 using Core.DataBase.Mongo;
 using Infrastructure.Db.Contexts;
 using Infrastructure.Db.Dotes.Mongo.OrderEntity;
+using Infrastructure.Db.Dtoes.Mongo.Bill;
 
 namespace FlytexpressBI.Controllers
 {
@@ -20,17 +21,25 @@ namespace FlytexpressBI.Controllers
 
         private readonly FlytBIDbContext _flytBIDbContext;
 
-        public HomeController(ILogger<HomeController> logger, MongoDbContext mongo, FlytBIDbContext flytBIDb)
+        private readonly IServiceProvider _serviceProvider;
+
+        public HomeController(ILogger<HomeController> logger, MongoDbContext mongo, FlytBIDbContext flytBIDb, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _mongoDbContext = mongo;
             _flytBIDbContext = flytBIDb;
+            _serviceProvider = serviceProvider;
         }
 
-        public IActionResult Index()
+        public async ValueTask<IActionResult> Index()
         {
-            var list = _mongoDbContext.Find<OrderParent>(o => o.Id == "F802672006160003").FirstOrDefault();
-            return Json(list);
+            await Task.Run(() => 
+            {
+                Task.Delay(TimeSpan.FromSeconds(3));
+                _flytBIDbContext.Abroadorderparent.FirstOrDefault();
+                
+            });
+            return View();
         }
 
         public IActionResult Privacy()

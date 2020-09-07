@@ -1,5 +1,6 @@
 ﻿using Infrastructure.Caches;
 using Infrastructure.Db.Contexts;
+using Infrastructure.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System;
@@ -9,6 +10,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Infrastructure.Helpers
 {
@@ -27,21 +29,21 @@ namespace Infrastructure.Helpers
         }
 
         public static void BatchInsert<T>(this FlytBIDbContext dbContext, 
-            IEnumerable<T> toInsertData, 
-            ref ICollection<(string tableName, string keyName, string errorFieldName, object errorFieldValue, string errorMessage)> errors)
+            IReadOnlyCollection<T> toInsertData)
         {
             if (!(toInsertData?.Any() ?? false)) return;
 
-            var conn =
-                //new NpgsqlConnection("Host=192.168.5.238;Port=5432;User ID=postgres;Password=postgres;Database=FlytBIDW");
-                dbContext.Database.GetDbConnection() as NpgsqlConnection;
+            var isSelfControll = false;
+            var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
 
-            if (conn.State != System.Data.ConnectionState.Open) conn.Open();
-            //var tran = await conn.BeginTransactionAsync();
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                isSelfControll = true;
+                conn.Open();
+            }
 
-            var errorKey = string.Empty;
-            var errorField = string.Empty;
-            object errorFiledValue = null;
+            var idRecords = new string[toInsertData.Count];
+            var i = 0;
 
             try
             {
@@ -55,28 +57,72 @@ namespace Infrastructure.Helpers
                     {
                         var fieldInfo = field.Field;
                         var fieldValue = fieldInfo.GetValue(data);
-                        if (field.IsKey) errorKey = fieldValue.ToString();
+                        if (field.IsKey)
+                            idRecords[i++] = fieldValue.ToString();
                         writer.Write(fieldValue);
                     }
-                        //await writer.WriteAsync(field.Field.GetValue(data));
+                    //await writer.WriteAsync(field.Field.GetValue(data));
 
                 }
                 writer.Complete();
                 //await tran.CommitAsync();
             }
-            catch (NpgsqlException ex)
-            {
-                errors.Add((SqlFormatter<T>.Table, errorKey, ex.Data["Where"].ToString(), string.Empty, ex.Message));
-                // todo 写道数据库日志里面
-            }
             catch (Exception ex)
             {
-                errors.Add((SqlFormatter<T>.Table, errorKey, string.Empty, string.Empty, ex.Message));
-                // todo 写道数据库日志里面
+                throw new DataSynchronizationException(idRecords, SqlFormatter<T>.Table, ex);
             }
             finally
             {
-                conn.Close();
+                if (isSelfControll)
+                    conn.Close();
+            }
+
+        }
+
+        public static void BatchInsert(this FlytBIDbContext dbContext,
+           ICollection toInsertData, PgDtoTypeCache typeCache)
+        {
+            if (toInsertData == null) return;
+
+            var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
+            var isSelfControll = false;
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                isSelfControll = true;
+                conn.Open();
+            }
+
+            var idRecords = new string[toInsertData.Count];
+            var i = 0;
+
+            try
+            {
+
+                var copyCommand = BuildBulkCopyCommand(typeCache.Fields, typeCache.Table);
+                using var writer = conn.BeginBinaryImport(copyCommand);
+                foreach (var data in toInsertData)
+                {
+                    writer.StartRow();
+                    foreach (var field in typeCache.Fields)
+                    {
+                        var fieldInfo = field.Field;
+                        var fieldValue = fieldInfo.GetValue(data);
+                        if (field.IsKey) idRecords[i++] = fieldValue.ToString();
+                        writer.Write(fieldValue);
+                    }
+                    //await writer.WriteAsync(field.Field.GetValue(data));
+
+                }
+                writer.Complete();
+                //await tran.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new DataSynchronizationException(idRecords, typeCache.Table, ex);
+            }
+            finally
+            {
+                if (isSelfControll) conn.Close();
             }
 
         }
@@ -106,62 +152,10 @@ namespace Infrastructure.Helpers
             commandBuilder.Append(" FROM STDIN (FORMAT BINARY)");
 
             var command = commandBuilder.ToString();
-            Console.WriteLine(command);
             return command;
         }
 
-        public static void BatchInsert(this FlytBIDbContext dbContext,
-            IEnumerable toInsertData, PgDtoTypeCache typeCache,
-            ref List<(string tableName, string keyName, string errorFieldName, object errorFieldValue, string errorMessage)> errors)
-        {
-            if (toInsertData == null) return;
-
-            var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
-
-            if (conn.State != System.Data.ConnectionState.Open) conn.Open();
-            //var tran = await conn.BeginTransactionAsync();
-
-            var errorKey = string.Empty;
-            var errorField = string.Empty;
-            object errorFiledValue = null;
-
-            try
-            {
-
-                var copyCommand = BuildBulkCopyCommand(typeCache.Fields, typeCache.Table);
-                using var writer = conn.BeginBinaryImport(copyCommand);
-                foreach (var data in toInsertData)
-                {
-                    writer.StartRow();
-                    foreach (var field in typeCache.Fields)
-                    {
-                        var fieldInfo = field.Field;
-                        var fieldValue = fieldInfo.GetValue(data);
-                        if (field.IsKey) errorKey = fieldValue.ToString();
-                        writer.Write(fieldValue);
-                    }
-                    //await writer.WriteAsync(field.Field.GetValue(data));
-
-                }
-                writer.Complete();
-                //await tran.CommitAsync();
-            }
-            catch (NpgsqlException ex)
-            {
-                errors.Add((typeCache.Table, errorKey, ex.Data["Where"].ToString(), string.Empty, ex.Message));
-                // todo 写道数据库日志里面
-            }
-            catch (Exception ex)
-            {
-                errors.Add((typeCache.Table, errorKey, string.Empty, string.Empty, ex.Message));
-                // todo 写道数据库日志里面
-            }
-            finally
-            {
-                conn.Close();
-            }
-
-        }
+       
 
     }
 }

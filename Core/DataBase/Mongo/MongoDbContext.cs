@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace Core.DataBase.Mongo
@@ -84,32 +85,43 @@ namespace Core.DataBase.Mongo
             _collectionSettings = new MongoCollectionSettings
             {
                 AssignIdOnInsert = true,
-                //GuidRepresentation = GuidRepresentation.CSharpLegacy,
                 WriteConcern = WriteConcern.WMajority
+               
             };
+            
+
             _options = options.Value;
             _client = new MongoClient(new MongoUrl(_options.ConnectionString));
             _database = _client.GetDatabase(_options.Database);
 
-            if (!_options.Master) _collectionSettings.ReadPreference = new ReadPreference(ReadPreferenceMode.SecondaryPreferred);
+            if (!_options.Master)
+                _collectionSettings.ReadPreference = new ReadPreference(ReadPreferenceMode.SecondaryPreferred);
+            else
+               _collectionSettings.ReadPreference = new ReadPreference(ReadPreferenceMode.PrimaryPreferred);
+
         }
 
-        //private void InitMember(string connStr, string database)
-        //{
-        //    InitClient(connStr);
-        //    _database = MongoClient.GetDatabase(database);
-        //    //MongoDb = MongoClient.GetServer().GetDatabase(database);
-        //}
+        /// <summary>
+        /// 获取某个表的文档集合
+        /// </summary>
+        /// <param name="tableName">表名</param>
+        /// <returns>文档集合</returns>
+        public MongoCollection<BsonDocument> Collection(string tableName)
+        {
+            return Database.GetCollection(tableName, _collectionSettings);
+        }
 
-        //private void InitClient(string connStr)
-        //{
-        //    if (MongoClient != null) return;
-        //    lock (LockObj)
-        //    {
-        //        if (MongoClient != null) return;
-        //        MongoClient = Clients.GetOrAdd(connStr, key => new MongoClient(connStr));
-        //    }
-        //}
+        /// <summary>
+        /// 获取某个表的文档集合
+        /// </summary>
+        /// <param name="mongoDtoType">dto类型</param>
+        /// <returns>文档集合</returns>
+        public MongoCollection<BsonDocument> Collection(Type mongoDtoType)
+        {
+            var tableAttribute = mongoDtoType.GetCustomAttribute<TableAttribute>();
+            var tableName = tableAttribute?.Name ?? mongoDtoType.Name;
+            return Collection(tableName);
+        }
 
         /// <summary>
         /// 返回查询结果

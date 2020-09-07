@@ -1,13 +1,16 @@
 ﻿using AutoMapper;
 using Core.DataBase.Mongo;
 using Infrastructure.Db.Contexts;
+using Infrastructure.Exceptions;
 using Infrastructure.Helpers;
 using Infrastructure.Schedule.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -25,32 +28,85 @@ namespace Domain.DataSynchronization.Managers
 
         protected readonly MongoDbContext _mongoDbContext;
 
-        protected readonly FlytBIDbContext _flytBIDbContext;
+        protected FlytBIDbContext _flytBIDbContext;
+
+        protected readonly IServiceProvider _serviceProvider;
+
+        protected IServiceScope _serviceScope;
+
+        protected static readonly string TableName;
+
+        static Synchronization()
+        {
+            TableName = typeof(TPgSQL).GetTableName();
+        }
 
         public Synchronization(
             MongoDbContext mongoDbContext,
-            FlytBIDbContext flytBIDbContext,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IServiceProvider serviceProvider)
         {
             _mongoDbContext = mongoDbContext;
-            _flytBIDbContext = flytBIDbContext;
+            _serviceProvider = serviceProvider;
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
+        public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, CancellationToken token)
+        {
+            Initialize();
+            return Task.Run(() =>
+            {
+                try
+                {
+                    _logger.LogInformation("开始导入{}数据", TableName);
+                    _logger.LogInformation("{}", DateTime.Now);
 
-        protected virtual async Task DoSynchronizeAsync(MongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
+
+                    ///获取mongo对应的表集合
+                    var mongoDtoType = typeof(TMongo);
+                    var collection = _mongoDbContext.Collection(mongoDtoType);
+
+                    ///计算一个表数据要同步的次数
+                    var totalCount = collection.Count() - startIndex;
+                    if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
+                    var synchronizationTimes = totalCount % synchronizeCountPerTime == 0
+                        ? totalCount / synchronizeCountPerTime : totalCount / synchronizeCountPerTime + 1;
+
+                    _logger.LogInformation("总数量：{}", totalCount);
+                    _logger.LogInformation("导入中");
+
+                    ///同步数据
+                    for (int i = 0; i < synchronizationTimes; i++, startIndex += synchronizeCountPerTime)
+                    {
+                        _logger.LogInformation("更新索引：{}", startIndex);
+                        DoSynchronize(collection, startIndex, synchronizeCountPerTime);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.Message);
+                    _logger.LogError(ex.StackTrace);
+                }
+                finally { Dispose(); }
+            });
+
+        }
+
+
+        protected virtual void DoSynchronize(MongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
         {
             var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCount).ToList();
             var mongoErrors = new List<(BsonValue, string)>(documents.Count);
             var insertData = new List<TPgSQL>(documents.Count);
-            ICollection<(string, string, string, object, string)> pgErrors = new List<(string, string, string, object, string)>(insertData.Count);
 
-            /// 查询并转换为pg实体
-            foreach (var document in documents)
+            BsonValue id = null;
+            try
             {
-                BsonValue id = null;
-                try
+                /// 查询并转换为pg实体
+                foreach (var document in documents)
                 {
+
                     var pgEntity = new TPgSQL();
                     var properties = typeof(TPgSQL).GetProperties();
                     foreach (var element in document.Elements)
@@ -68,109 +124,34 @@ namespace Domain.DataSynchronization.Managers
                         }
                     }
                     insertData.Add(pgEntity);
-                    //await _flytBIDbContext.AddAsync(pgEntity);
-                }
-                catch (Exception ex)
-                {
-                    mongoErrors.Add((id, ex.Message));
-                    continue;
+
                 }
 
+                _flytBIDbContext.BatchInsert(insertData);
             }
-
-            _flytBIDbContext.BatchInsert(insertData, ref pgErrors);
-
-            foreach (var error in mongoErrors)
+            catch (Exception ex)
             {
-                _logger.LogError("id：{}\n异常：{}", error.Item1, error.Item2);
+                throw new DataSynchronizationException(id, TableName, ex);
             }
 
-            foreach (var error in pgErrors)
-            {
-                _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", error.Item1, error.Item2, error.Item3, error.Item4, error.Item5);
-            }
         }
 
-        public virtual async Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, CancellationToken token)
+        protected void Dispose()
         {
-            var mongoDatabase = _mongoDbContext.Database;
-
-            ///获取mongo对应的表集合
-            var mongtoEntityType = typeof(TMongo);
-            var mongoTable = mongtoEntityType.GetTableName();
-            var collection = mongoDatabase.GetCollection(mongoTable);
-
-            ///获取pg对应表实体类型
-            var pgEntityType = typeof(TPgSQL);
-            var pgTable = pgEntityType.GetTableName();
-
-            ///计算一个表数据要同步的次数
-            var totalCount = collection.Count();
-            if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
-            var synchronizationTimes = totalCount % synchronizeCountPerTime == 0
-                ? totalCount / synchronizeCountPerTime : totalCount / synchronizeCountPerTime + 1;
-
-            ///同步数据
-            for (int i = 0; i < synchronizationTimes; i++, startIndex += synchronizeCountPerTime)
-            {
-                #region 注释测试代码
-
-                //var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCountPerTime).ToList();
-                //var mongoErrors = new List<(BsonValue, string)>(documents.Count);
-                //var insertData = new List<TPgSQL>(documents.Count);
-                //var pgErrors = new List<(string, string, string, object, string)>(insertData.Count);
-
-                ///// 查询并转换为pg实体
-                //foreach (var document in documents)
-                //{
-                //    BsonValue id = null;
-                //    try
-                //    {
-                //        var pgEntity = new TPgSQL();
-                //        var properties = pgEntityType.GetProperties();
-                //        foreach (var element in document.Elements)
-                //        {
-                //            if (element.Name == "_id")
-                //            {
-                //                id = element.Value;
-                //                var idProperty = properties.Where(p => p.Name == "Id").First();
-                //                idProperty.SetValue(pgEntity, element.GetValue(idProperty.PropertyType));
-                //            }
-                //            else
-                //            {
-                //                var property = properties.Where(p => p.Name.ToLower() == element.Name.ToLower()).FirstOrDefault();
-                //                property?.SetValue(pgEntity, element.GetValue(property.PropertyType));
-                //            }
-                //        }
-                //        insertData.Add(pgEntity);
-                //        //await _flytBIDbContext.AddAsync(pgEntity);
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        mongoErrors.Add((id, ex.Message));
-                //        continue;
-                //    }
-
-                //}
-
-                //_flytBIDbContext.BatchInsert(insertData, ref pgErrors);
-
-                //foreach (var error in mongoErrors)
-                //{
-                //    _logger.LogError("id：{}\n异常：{}", error.Item1, error.Item2);
-                //}
-
-                //foreach (var error in pgErrors)
-                //{
-                //    _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", error.Item1, error.Item2, error.Item3, error.Item4, error.Item5);
-                //}
-
-                #endregion
-
-                await DoSynchronizeAsync(collection, startIndex, synchronizeCountPerTime);
-            }
-
+            _logger.LogInformation("释放资源");
+            _logger.LogInformation("{}", DateTime.Now);
+            _serviceScope.Dispose();
         }
 
+
+        private void Initialize()
+        {
+            _logger.LogInformation("创建作用域前");
+
+            _serviceScope = _serviceProvider.CreateScope();
+            _flytBIDbContext = _serviceScope.ServiceProvider.GetRequiredService<FlytBIDbContext>();
+
+            _logger.LogInformation("创建作用域后");
+        }
     }
 }

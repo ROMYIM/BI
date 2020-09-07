@@ -16,3 +16,12 @@
 /Application/bin/Debug/netcoreapp3.1
 /Application/obj
 /ExportData
+/Application/bin/Release/netcoreapp3.1
+/Core/bin/Release/netcoreapp3.1
+/Domain/bin/Release/netcoreapp3.1
+/Infrastructure/bin/Release/netcoreapp3.1
+/FlytexpressBI/.config
+/FlytexpressBI/bin/Release/netcoreapp3.1/log
+/FlytexpressBI/bin/Release/netcoreapp3.1/Properties
+/FlytexpressBI/bin/Release/netcoreapp3.1
+/FlytexpressBI/Properties/PublishProfiles

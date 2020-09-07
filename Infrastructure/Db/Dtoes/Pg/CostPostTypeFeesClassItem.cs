@@ -6,7 +6,7 @@ using System.Text;
 namespace Infrastructure.Db.Dtoes.Pg
 {
     [Table("CostPostTypeFeesClassItem")]
-    public class CostPostTypeFeesClassItem : UserFessClassItem
+    public class CostPostTypeFeesClassItem : UserFeesClassItem
     {
     }
 }

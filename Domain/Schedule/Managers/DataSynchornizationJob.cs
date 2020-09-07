@@ -79,7 +79,7 @@ namespace Domain.Schedule.Managers
                     var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCountPerTime).ToList();
                     var mongoErrors = new List<(BsonValue, string)>(documents.Count);
                     var insertData = new List<object>(documents.Count);
-                    var pgErrors = new List<(string, string, string, object, string)>(insertData.Count);
+                    var pgErrors = default((string, string, string, string));
 
                     /// 查询并转换为pg实体
                     foreach (var document in documents)
@@ -115,22 +115,22 @@ namespace Domain.Schedule.Managers
                     }
 
                     if (_pgDtoTypeCaches.TryGetValue(pgEntityType, out var typeCache))
-                        _flytBIDbContext.BatchInsert(insertData, typeCache, ref pgErrors);
+                        _flytBIDbContext.BatchInsert(insertData, typeCache);
                     else
                     {
                         _logger.LogError("没有读取到配置");
                         throw new ArgumentNullException("数据同步，无法读取配置到缓存中");
                     }
 
-                    foreach (var error in mongoErrors)
-                    {
-                        _logger.LogError("id：{}\n异常：{}", error.Item1, error.Item2);
-                    }
+                    //foreach (var error in mongoErrors)
+                    //{
+                    //    _logger.LogError("id：{}\n异常：{}", error.Item1, error.Item2);
+                    //}
 
-                    foreach (var error in pgErrors)
-                    {
-                        _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", error.Item1, error.Item2, error.Item3, error.Item4, error.Item5);
-                    }
+                    //foreach (var error in pgErrors)
+                    //{
+                    //    _logger.LogError("table:{}  key:{}  field:{}  value:{}   message:{}", error.Item1, error.Item2, error.Item3, error.Item4, error.Item5);
+                    //}
 
                 }
 

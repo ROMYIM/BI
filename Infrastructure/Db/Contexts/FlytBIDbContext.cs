@@ -13,6 +13,7 @@ namespace Infrastructure.Db.Contexts
         {
         }
 
+        public virtual DbSet<PeriodMoney> PeriodMoneys { get; set; }
         public virtual DbSet<SopId> SopIds { get; set; }
         public virtual DbSet<Abroadorderparent> Abroadorderparent { get; set; }
         public virtual DbSet<Abroadquestionhistory> Abroadquestionhistory { get; set; }
@@ -49,7 +50,7 @@ namespace Infrastructure.Db.Contexts
         public virtual DbSet<Userinfoidentity> Userinfoidentity { get; set; }
         public virtual DbSet<Usermoneylogs> Usermoneylogs { get; set; }
         public virtual DbSet<Usermoneypreparerecord> Usermoneypreparerecord { get; set; }
-        public virtual DbSet<Usermoneyrecord> Usermoneyrecord { get; set; }
+        public virtual DbSet<UserMoneyRecord> Usermoneyrecord { get; set; }
         public virtual DbSet<Usermoneyreturnrecord> Usermoneyreturnrecord { get; set; }
         public virtual DbSet<Usernotificationrecord> Usernotificationrecord { get; set; }
         public virtual DbSet<Userordermoneyrecord> Userordermoneyrecord { get; set; }

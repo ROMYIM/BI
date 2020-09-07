@@ -4,6 +4,7 @@ using Application.Services.DataSynchorization;
 using AutoMapper;
 using Core.BackgroundService;
 using Core.Extensions.DependencyInjection;
+using Domain.DataSynchronization;
 using Domain.DataSynchronization.Managers;
 using Domain.Schedule.Entities;
 using Domain.Schedule.Managers;
@@ -38,6 +39,9 @@ namespace FlytexpressBI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            services.AddSingleton(serviceProvider => serviceProvider);
+
             #region 本地缓存注册
 
             services.AddDbDtoTypeCaches();
@@ -53,11 +57,17 @@ namespace FlytexpressBI
 
             #endregion
 
+            #region 表同步服务
+
+            services.AddTransient<UserMoneyRecordSynchronization>();
+            services.AddTransient<OrderParentSynchronization>();
+
+            #endregion
+
             #region 任务组件注册
 
             services.Configure<DataSynchronizationOptions>(Configuration.GetSection("DataSynchronization"));
             services.AddScoped<DataSynchornizationJob>();
-            services.AddTransient<UserMoneyRecordSynchronization>();
             services.AddSingleton<IJobFactory, ScheduleJobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
             services.AddTransient(_ => new ScheduleJob

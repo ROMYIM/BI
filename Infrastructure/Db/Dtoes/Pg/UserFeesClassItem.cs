@@ -9,8 +9,8 @@ namespace Infrastructure.Db.Dtoes.Pg
     /// <summary>
     /// 客户扣费科目费项明细
     /// </summary>
-    [Table("UserFessClassItem")]
-    public class UserFessClassItem
+    [Table("UserFeesClassItem")]
+    public class UserFeesClassItem
     {
         [Key]
         public string Id { get; set; }

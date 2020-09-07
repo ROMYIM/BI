@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace Infrastructure.Db.Dtoes.Mongo.OrderEntity
+namespace Infrastructure.Db.Dtoes.Pg
 {
     /// <summary> 
     ///订单报关明细表
     /// </summary>
+    [Table("HaikwanDetail")]
     public class HaikwanDetail
     {
-        public Guid Id { get; set; }
+        [Key]   
+        public string Id { get; set; }
 
         /// <summary> 
         /// 海关编码
@@ -105,5 +109,7 @@ namespace Infrastructure.Db.Dtoes.Mongo.OrderEntity
         /// 材质(FBA必填)
         /// </summary>
         public string Material { get; set; }
+
+        public string OrderId { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.DataAnnotations.Db;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,10 +11,11 @@ namespace Infrastructure.Db.Dtoes.Pg
     ///订单报关明细表
     /// </summary>
     [Table("HaikwanDetail")]
+    [ChildrenTable(ParentTable = "OrderParent")]
     public class HaikwanDetail
-    {
-        [Key]   
-        public string Id { get; set; }
+    {  
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         /// <summary> 
         /// 海关编码
@@ -110,6 +112,8 @@ namespace Infrastructure.Db.Dtoes.Pg
         /// </summary>
         public string Material { get; set; }
 
+        [ForeginKeyColumn]
         public string OrderId { get; set; }
+
     }
 }

@@ -57,9 +57,12 @@ namespace Infrastructure.Helpers
                     {
                         var fieldInfo = field.Field;
                         var fieldValue = fieldInfo.GetValue(data);
-                        if (field.IsKey)
+                        if (field.IsKey && !SqlFormatter<T>.IsChildrenTable)
                             idRecords[i++] = fieldValue.ToString();
-                        writer.Write(fieldValue);
+                        else if (SqlFormatter<T>.IsChildrenTable && field.IsRelationKey)
+                            idRecords[i++] = fieldValue.ToString();
+                        if (!field.IsDatabaseGernerated)
+                            writer.Write(fieldValue);
                     }
                     //await writer.WriteAsync(field.Field.GetValue(data));
 
@@ -135,6 +138,9 @@ namespace Infrastructure.Helpers
             for (int i = 0; i < fields.Length; i++)
             {
                 var fieldInfo = fields[i];
+                if (fieldInfo.IsDatabaseGernerated)
+                    continue;
+
                 if (i != fields.Length - 1)
                 {
                     commandBuilder.Append("\"");

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Core.DataAnnotations.Db;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace Infrastructure.Db.Dtoes.Pg
@@ -7,9 +9,12 @@ namespace Infrastructure.Db.Dtoes.Pg
     /// <summary> 
     ///订单明细表
     /// </summary>
+    [Table("OrderDetail")]
+    [ChildrenTable(ParentTable = "OrderParent")]
     public class OrderDetail
     {
-        public string Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         /// <summary> 
         /// 物品颜色
@@ -109,6 +114,7 @@ namespace Infrastructure.Db.Dtoes.Pg
             set => _platformWarehouseCode = value?.Trim();
         }
 
+        [ForeginKeyColumn]
         public string OrderId { get; set; }
     }
 }

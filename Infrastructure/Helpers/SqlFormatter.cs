@@ -1,4 +1,5 @@
-﻿using Infrastructure.Caches;
+﻿using Core.DataAnnotations.Db;
+using Infrastructure.Caches;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Concurrent;
@@ -18,6 +19,8 @@ namespace Infrastructure.Helpers
         #region 属性
 
         public static string Table { get; private set; }
+
+        public static bool IsChildrenTable { get; private set; }
 
         public static string SelectFieldString;
         public static string NoKeyFieldString;
@@ -42,6 +45,7 @@ namespace Infrastructure.Helpers
         {
             var type = typeof(T);
             Table = type.GetCustomAttribute<TableAttribute>()?.Name ?? type.Name;
+            IsChildrenTable = type.GetCustomAttribute<ChildrenTableAttribute>() != null;
             Fields = type.GetProperties()
                 .Where(f => f.CustomAttributes.All(a => a.AttributeType != typeof(NotMappedAttribute)))
                 .Select(f => new EntityFeildInfo(f))

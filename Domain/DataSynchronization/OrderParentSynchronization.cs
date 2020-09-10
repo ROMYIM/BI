@@ -47,150 +47,157 @@ namespace Domain.DataSynchronization
                 var idProperty = orderType.GetProperty("Id");
                 idProperty?.SetValue(pgOrder, orderId);
 
-                foreach (var element in document.Elements)
+                try
                 {
-
-                    if (element.Name == "_id") continue;
-                    else if (element.Name == "ApiOrderIds")
+                    foreach (var element in document.Elements)
                     {
-                        if (element.Value.BsonType != BsonType.Array) continue;
 
-                        var apiOrderIds = element.Value.AsBsonArray;
-                        foreach (var apiOrderId in apiOrderIds)
+                        if (element.Name == "_id") continue;
+                        else if (element.Name == "ApiOrderIds")
                         {
-                            if (apiOrderId.BsonType == BsonType.Null) continue;
-                            var apiOrderIdEntity = new OrderApiOrderId()
-                            {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                ApiOrderId = apiOrderId.AsString,
-                                OrderId = orderId
-                            };
-                            apiOrderIdInsertData.AddLast(apiOrderIdEntity);
-                        }
-                    }
-                    else if (element.Name == "Remarks")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
+                            if (!element.Value.IsBsonArray) continue;
 
-                        var remarks = element.Value.AsBsonArray;
-                        foreach (var remark in remarks)
-                        {
-                            if (remark.BsonType == BsonType.Null) continue;
-                            var remarkEntity = new OrderRemark()
+                            var apiOrderIds = element.Value.AsBsonArray;
+                            foreach (var apiOrderId in apiOrderIds)
                             {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                Remark = remark.AsString,
-                                OrderId = orderId,
-                            };
-                            remarkInsertData.AddLast(remarkEntity);
-                        }
-                    }
-                    else if (element.Name == "SalesPlatformTransactionIds")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
-
-                        var salesPlatformTransactionIds = element.Value.AsBsonArray;
-                        foreach (var salesPlatformTransactionId in salesPlatformTransactionIds)
-                        {
-                            if (salesPlatformTransactionId.BsonType == BsonType.Null) continue;
-                            var salesPlatformTransactionIdEntity = new SalesPlatformTransactionId()
-                            {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                TransactionId = salesPlatformTransactionId.AsString,
-                                OrderId = orderId
-                            };
-                            salesPlatformTranscationIdInsertData.AddLast(salesPlatformTransactionIdEntity);
-                        }
-                    }
-                    else if (element.Name == "SalesRecordNumbers")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
-
-                        var salesRecordNumbers = element.Value.AsBsonArray;
-                        foreach (var salesRecordNumber in salesRecordNumbers)
-                        {
-                            if (salesRecordNumber.BsonType == BsonType.Null) continue;
-                            var salesRecordNumberEntity = new SalesRecordNumber()
-                            {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                RecordNumber = salesRecordNumber.AsInt32,
-                                OrderId = orderId
-                            };
-                            salesRecordNumberInsetData.AddLast(salesRecordNumberEntity);
-                        }
-                    }
-                    else if (element.Name == "OrderDetailList")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
-
-                        var orderDetailList = element.Value.AsBsonArray;
-                        foreach (var orderDetail in orderDetailList)
-                        {
-                            if (orderDetail.BsonType == BsonType.Null) continue;
-                            var orderDetailEntity = new OrderDetail()
-                            {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                OrderId = orderId
-                            };
-
-                            var detailDocument = orderDetail.AsBsonDocument;
-                            var detailType = orderDetailEntity.GetType();
-                            foreach (var detailElement in detailDocument.Elements)
-                            {
-                                var property = detailType.GetProperty(detailElement.Name);
-                                property?.SetValue(orderDetailEntity, detailElement.GetValue(property.PropertyType));
+                                if (apiOrderId.IsBsonNull) continue;
+                                var apiOrderIdEntity = new OrderApiOrderId()
+                                {
+                                    
+                                    ApiOrderId = apiOrderId.AsString,
+                                    OrderId = orderId
+                                };
+                                apiOrderIdInsertData.AddLast(apiOrderIdEntity);
                             }
-
-                            orderDetailInsertData.AddLast(orderDetailEntity);
                         }
-                    }
-                    else if (element.Name == "HaikwanDetialList")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
-
-                        var haikwanDetailList = element.Value.AsBsonArray;
-                        foreach (var haikwanDetail in haikwanDetailList)
+                        else if (element.Name == "Remarks")
                         {
-                            if (haikwanDetail.BsonType == BsonType.Null) continue;
-                            var haikwanDetailEntity = new HaikwanDetail()
-                            {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                OrderId = orderId
-                            };
+                            if (!element.Value.IsBsonArray) continue;
 
-                            var detailDocument = haikwanDetail.AsBsonDocument;
-                            var detailType = haikwanDetailEntity.GetType();
-                            foreach (var detailElement in detailDocument.Elements)
+                            var remarks = element.Value.AsBsonArray;
+                            foreach (var remark in remarks)
                             {
-                                var property = detailType.GetProperty(detailElement.Name);
-                                property?.SetValue(haikwanDetailEntity, detailElement.GetValue(property.PropertyType));
+                                if (remark.BsonType == BsonType.Null) continue;
+                                var remarkEntity = new OrderRemark()
+                                {
+                                    
+                                    Remark = remark.AsString,
+                                    OrderId = orderId,
+                                };
+                                remarkInsertData.AddLast(remarkEntity);
                             }
-
-                            haikwanDetailInsertData.AddLast(haikwanDetailEntity);
                         }
-                    }
-                    else if (element.Name == "MultiPackageIds")
-                    {
-                        if (element.Value.BsonType != BsonType.Array) continue;
-
-                        var multiPackageIds = element.Value.AsBsonArray;
-                        foreach (var multiPackageId in multiPackageIds)
+                        else if (element.Name == "SalesPlatformTransactionIds")
                         {
-                            if (multiPackageId.BsonType == BsonType.Null) continue;
-                            var multiPackageIdEntity = new OrderMultiPackageId()
+                            if (!element.Value.IsBsonArray) continue;
+
+                            var salesPlatformTransactionIds = element.Value.AsBsonArray;
+                            foreach (var salesPlatformTransactionId in salesPlatformTransactionIds)
                             {
-                                Id = GuidHelper.GenerateComb().ToString(),
-                                MultiPackageId = multiPackageId.AsString,
-                                OrderId = orderId
-                            };
-                            multiPackageIdInsertData.AddLast(multiPackageIdEntity);
+                                if (salesPlatformTransactionId.BsonType == BsonType.Null) continue;
+                                var salesPlatformTransactionIdEntity = new SalesPlatformTransactionId()
+                                {
+                                    
+                                    TransactionId = salesPlatformTransactionId.AsString,
+                                    OrderId = orderId
+                                };
+                                salesPlatformTranscationIdInsertData.AddLast(salesPlatformTransactionIdEntity);
+                            }
+                        }
+                        else if (element.Name == "SalesRecordNumbers")
+                        {
+                            if (!element.Value.IsBsonArray) continue;
+
+                            var salesRecordNumbers = element.Value.AsBsonArray;
+                            foreach (var salesRecordNumber in salesRecordNumbers)
+                            {
+                                if (salesRecordNumber.IsBsonNull) continue;
+                                var salesRecordNumberEntity = new SalesRecordNumber()
+                                {
+                                    
+                                    RecordNumber = salesRecordNumber.As<int>(),
+                                    OrderId = orderId
+                                };
+                                salesRecordNumberInsetData.AddLast(salesRecordNumberEntity);
+                            }
+                        }
+                        else if (element.Name == "OrderDetailList")
+                        {
+                            if (!element.Value.IsBsonArray) continue;
+
+                            var orderDetailList = element.Value.AsBsonArray;
+                            foreach (var orderDetail in orderDetailList)
+                            {
+                                if (orderDetail.IsBsonNull) continue;
+                                var orderDetailEntity = new OrderDetail()
+                                {
+                                    
+                                    OrderId = orderId
+                                };
+
+                                var detailDocument = orderDetail.AsBsonDocument;
+                                var detailType = orderDetailEntity.GetType();
+                                foreach (var detailElement in detailDocument.Elements)
+                                {
+                                    var property = detailType.GetProperty(detailElement.Name);
+                                    property?.SetValue(orderDetailEntity, detailElement.GetValue(property.PropertyType));
+                                }
+
+                                orderDetailInsertData.AddLast(orderDetailEntity);
+                            }
+                        }
+                        else if (element.Name == "HaikwanDetialList")
+                        {
+                            if (!element.Value.IsBsonArray) continue;
+
+                            var haikwanDetailList = element.Value.AsBsonArray;
+                            foreach (var haikwanDetail in haikwanDetailList)
+                            {
+                                if (haikwanDetail.IsBsonNull) continue;
+                                var haikwanDetailEntity = new HaikwanDetail()
+                                {
+                                    
+                                    OrderId = orderId
+                                };
+
+                                var detailDocument = haikwanDetail.AsBsonDocument;
+                                var detailType = haikwanDetailEntity.GetType();
+                                foreach (var detailElement in detailDocument.Elements)
+                                {
+                                    var property = detailType.GetProperty(detailElement.Name);
+                                    property?.SetValue(haikwanDetailEntity, detailElement.GetValue(property.PropertyType));
+                                }
+
+                                haikwanDetailInsertData.AddLast(haikwanDetailEntity);
+                            }
+                        }
+                        else if (element.Name == "MultiPackageIds")
+                        {
+                            if (!element.Value.IsBsonArray) continue;
+
+                            var multiPackageIds = element.Value.AsBsonArray;
+                            foreach (var multiPackageId in multiPackageIds)
+                            {
+                                if (multiPackageId.IsBsonNull) continue;
+                                var multiPackageIdEntity = new OrderMultiPackageId()
+                                {
+                                    
+                                    MultiPackageId = multiPackageId.AsString,
+                                    OrderId = orderId
+                                };
+                                multiPackageIdInsertData.AddLast(multiPackageIdEntity);
+                            }
+                        }
+                        else
+                        {
+                            var property = orderType.GetProperty(element.Name);
+                            property?.SetValue(pgOrder, element.GetValue(property.PropertyType));
                         }
                     }
-                    else
-                    {
-                        var property = orderType.GetProperty(element.Name);
-                        property?.SetValue(pgOrder, element.GetValue(property.PropertyType));
-                    }
+                }
+                catch (Exception ex) when (!(ex is DataSynchronizationException))
+                {
+                    throw new DataSynchronizationException(orderId, TableName, ex);
                 }
 
                 orderInsertData.Add(pgOrder);

@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using MongoDB.Driver;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -69,6 +70,19 @@ namespace Infrastructure.Exceptions
                 msgBuilder.Append("id:").Append(_id).Append(" ");
                 msgBuilder.Append("field:").Append(ne.Data["Where"]).Append(" ");
                 msgBuilder.Append("msg:").Append(ne.Message);
+            }
+            else if (InnerException is MongoException me)
+            {
+                msgBuilder.Append("mongo ");
+                msgBuilder.Append("table:").Append(_tableName).Append(" ");
+                msgBuilder.Append("id:").Append(_id).Append(" ");
+                msgBuilder.Append("msg:").Append(me.Message);
+            }
+            else
+            {
+                msgBuilder.Append("table:").Append(_tableName).Append(" ");
+                msgBuilder.Append("id:").Append(_id).Append(" ");
+                msgBuilder.Append("msg:").Append(InnerException.Message);
             }
 
             return msgBuilder.ToString();

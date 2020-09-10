@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
@@ -140,6 +141,91 @@ namespace Infrastructure.Helpers
             //if (valueType == typeof(double?)) return bsonValue.AsNullableDouble;
 
 
+        }
+
+        public static T As<T>(this BsonValue bsonValue)
+        {
+            if (bsonValue == null) return default;
+
+            var valueType = typeof(T);
+            object tempValue = null;
+            NullableConverter converter;
+            switch (bsonValue.BsonType)
+            {
+                case BsonType.Double:
+                    tempValue = bsonValue.AsDouble;
+                    if (valueType.IsNullableType(typeof(double)))
+                        tempValue = bsonValue.AsNullableDouble;
+                    else if (valueType.IsNullableType(typeof(float)))
+                    {
+                        converter = new NullableConverter(typeof(float));
+                        tempValue = converter.ConvertTo(tempValue, valueType);
+                    }
+                    else if (valueType.IsNullableType(typeof(long)))
+                    {
+                        converter = new NullableConverter(typeof(long));
+                        tempValue = converter.ConvertTo(tempValue, valueType);
+                    }
+                    else if (valueType.IsNullableType(typeof(int)))
+                    {
+                        converter = new NullableConverter(typeof(int));
+                        tempValue = converter.ConvertTo(tempValue, valueType);
+                    }
+                    break;
+
+                case BsonType.String:
+                    tempValue = bsonValue.AsString;
+                    break;
+
+                case BsonType.ObjectId:
+                    tempValue = bsonValue.AsString;
+                    break;
+
+                case BsonType.Boolean:
+                    tempValue = bsonValue.AsBoolean;
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.AsNullableBoolean;
+                    break;
+
+                case BsonType.DateTime:
+                    tempValue = bsonValue.ToLocalTime();
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.ToNullableLocalTime();
+                    break;
+
+                case BsonType.Int32:
+                    tempValue = bsonValue.AsInt32;
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.AsNullableInt32;
+                    break;
+
+                case BsonType.Timestamp:
+                    tempValue = bsonValue.ToLocalTime();
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.ToNullableLocalTime();
+                    break;
+
+                case BsonType.Int64:
+                    tempValue = bsonValue.AsInt64;
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.AsNullableInt64;
+                    else if (valueType.IsNullableType(typeof(int)))
+                    {
+                        converter = new NullableConverter(typeof(int));
+                        tempValue = converter.ConvertTo(tempValue, valueType);
+                    }
+                    break;
+
+                case BsonType.Decimal128:
+                    tempValue = bsonValue.AsDecimal;
+                    if (valueType.IsNullableType(tempValue.GetType()))
+                        tempValue = bsonValue.AsNullableDecimal;
+                    break;
+                default:
+                    break;
+            }
+
+            return (T)Convert.ChangeType(tempValue, valueType);
         }
 
         /// <summary>

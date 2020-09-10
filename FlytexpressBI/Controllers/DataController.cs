@@ -36,7 +36,7 @@ namespace FlytexpressBI.Controllers
 
         public IActionResult Index()
         {
-            _ = _synchronization.SynchronizeDataAsync(0, 1000, new CancellationTokenSource().Token);
+            _ = _synchronization.SynchronizeDataAsync(0, 1000);
             //_ = _syncJob.SynchronizeData(1000, new CancellationTokenSource().Token);
             return Ok();
         }
@@ -44,14 +44,14 @@ namespace FlytexpressBI.Controllers
         [Route("sync/order")]
         public IActionResult OrderSynchronize()
         {
-            _ = _orderSynchronization.SynchronizeDataAsync(163000, 1000, new CancellationTokenSource().Token);
+            _ = _orderSynchronization.SynchronizeDataAsync(0, 1000);
             return Ok();
         }
 
         [Route("sync/usermoneyrecord")]
         public IActionResult UserMoneyRecordSynchronize()
         {
-            _ = _synchronization.SynchronizeDataAsync(0, 1000, new CancellationTokenSource().Token);
+            _ = _synchronization.SynchronizeDataAsync(0, 1000);
             //_ = _syncJob.SynchronizeData(1000, new CancellationTokenSource().Token);
             return Ok();
         }

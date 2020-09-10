@@ -1,4 +1,5 @@
-﻿using Infrastructure.Helpers;
+﻿using Core.DataAnnotations.Db;
+using Infrastructure.Helpers;
 using Infrastructure.Schedule.Options;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Options;
@@ -93,6 +94,10 @@ namespace Infrastructure.Caches
 
         public bool IsKey { get; }
 
+        public bool IsRelationKey { get; }
+
+        public bool IsDatabaseGernerated { get; }
+
         public PropertyInfo Field { get; set; }
 
         public object Value { get; set; }
@@ -101,9 +106,14 @@ namespace Infrastructure.Caches
         {
             Field = property;
 
-            if (Field.GetCustomAttributes<KeyAttribute>()?.Any() ?? false) IsKey = true;
+            IsKey = Field.GetCustomAttribute<KeyAttribute>() != null;
+
+            IsRelationKey = Field.GetCustomAttribute<ForeginKeyColumnAttribute>() != null;
+
+            IsDatabaseGernerated = Field.GetCustomAttribute<DatabaseGeneratedAttribute>() != null;
 
             if (ColumnName == "_id" || ColumnName.ToLower() == "id") IsKey = true;
+
         }
     }
 }

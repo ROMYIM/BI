@@ -24,6 +24,8 @@ namespace Domain.DataSynchronization.Managers
 {
     public abstract class Synchronization<TMongo, TPgSQL> where TMongo : class, new() where TPgSQL : class, new()
     {
+        private const int MoreThreadsToInsertDataCount = 1_000_000;
+
         protected readonly ILogger _logger;
 
         protected readonly MongoDbContext _mongoDbContext;
@@ -35,6 +37,8 @@ namespace Domain.DataSynchronization.Managers
         protected IServiceScope _serviceScope;
 
         protected static readonly string TableName;
+
+        public CancellationTokenSource TokenSource { get; }
 
         static Synchronization()
         {
@@ -49,12 +53,15 @@ namespace Domain.DataSynchronization.Managers
             _mongoDbContext = mongoDbContext;
             _serviceProvider = serviceProvider;
             _logger = loggerFactory.CreateLogger(GetType());
+            TokenSource = new CancellationTokenSource();
         }
 
-        public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, CancellationToken token)
+        public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime)
         {
             Initialize();
-            return Task.Run(() =>
+
+            var token = TokenSource.Token;
+            return Task.Factory.StartNew(async () =>
             {
                 try
                 {
@@ -69,18 +76,49 @@ namespace Domain.DataSynchronization.Managers
                     ///计算一个表数据要同步的次数
                     var totalCount = collection.Count() - startIndex;
                     if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
-                    var synchronizationTimes = totalCount % synchronizeCountPerTime == 0
-                        ? totalCount / synchronizeCountPerTime : totalCount / synchronizeCountPerTime + 1;
 
                     _logger.LogInformation("总数量：{}", totalCount);
                     _logger.LogInformation("导入中");
 
-                    ///同步数据
-                    for (int i = 0; i < synchronizationTimes; i++, startIndex += synchronizeCountPerTime)
+                    ///如果数据量大于阈值（暂定一千万）就开启多线程同步
+                    if (totalCount >= MoreThreadsToInsertDataCount)
                     {
-                        _logger.LogInformation("更新索引：{}", startIndex);
-                        DoSynchronize(collection, startIndex, synchronizeCountPerTime);
+                        
+                        var synchronizeCountPerTask = MoreThreadsToInsertDataCount;
+                        var taskCount = totalCount / synchronizeCountPerTask;
+
+                        for (int i = 0; i < taskCount; i++)
+                        {
+                            if (CheckCancellRequested(startIndex)) return;
+
+                            await Task.Factory.StartNew(() =>
+                            {
+                                _logger.LogInformation("线程id：{}", Thread.CurrentThread.ManagedThreadId);
+
+                                for (int j = 0; j < synchronizeCountPerTask; j += synchronizeCountPerTime, startIndex += synchronizeCountPerTime)
+                                {
+                                    if (CheckCancellRequested(startIndex)) return;
+
+                                    _logger.LogInformation("更新索引：{}", startIndex);
+                                    DoSynchronize(collection, startIndex, synchronizeCountPerTime);
+                                }
+                            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                            await Task.Delay(TimeSpan.FromSeconds(5));
+                        }
                     }
+                    else
+                    {
+
+                        for (int j = 0; j < totalCount; j += synchronizeCountPerTime, startIndex += synchronizeCountPerTime)
+                        {
+                            if (CheckCancellRequested(startIndex)) return;
+
+                            _logger.LogInformation("更新索引：{}", startIndex);
+                            DoSynchronize(collection, startIndex, synchronizeCountPerTime);
+                        }
+                    }
+                   
 
                 }
                 catch (Exception ex)
@@ -89,7 +127,7 @@ namespace Domain.DataSynchronization.Managers
                     _logger.LogError(ex.StackTrace);
                 }
                 finally { Dispose(); }
-            });
+            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
         }
 
@@ -134,6 +172,18 @@ namespace Domain.DataSynchronization.Managers
                 throw new DataSynchronizationException(id, TableName, ex);
             }
 
+        }
+
+        protected virtual bool CheckCancellRequested(int currentIndex)
+        {
+            if (TokenSource.Token.IsCancellationRequested)
+            {
+                _logger.LogInformation("任务被手动终止");
+                _logger.LogInformation("当前索引：{}", currentIndex);
+                return true;
+            }
+
+            return false;
         }
 
         protected void Dispose()

@@ -59,8 +59,8 @@ namespace FlytexpressBI
 
             #region 表同步服务
 
-            services.AddTransient<UserMoneyRecordSynchronization>();
-            services.AddTransient<OrderParentSynchronization>();
+            services.AddSingleton<UserMoneyRecordSynchronization>();
+            services.AddSingleton<OrderParentSynchronization>();
 
             #endregion
 

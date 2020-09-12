@@ -1,4 +1,5 @@
 ﻿using Core.DataBase.Mongo;
+using Core.Extensions.Encode;
 using Domain.DataSynchronization.Managers;
 using Infrastructure.Db.Dtoes.Pg;
 using Infrastructure.Exceptions;
@@ -10,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using MongoOrder = Infrastructure.Db.Dotes.Mongo.OrderEntity.OrderParent;
 using PgOrder = Infrastructure.Db.Dtoes.Pg.OrderParent;
 
@@ -83,10 +85,12 @@ namespace Domain.DataSynchronization
                             foreach (var remark in remarks)
                             {
                                 if (remark.BsonType == BsonType.Null) continue;
+
+                                var encoding = Encoding.GetEncoding(remark.AsString);
                                 var remarkEntity = new OrderRemark()
                                 {
                                     
-                                    Remark = remark.AsString,
+                                    Remark = remark.AsString.ToUTF8(),
                                     OrderId = orderId,
                                 };
                                 remarkInsertData.AddLast(remarkEntity);

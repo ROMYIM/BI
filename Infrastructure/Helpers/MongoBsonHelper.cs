@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using Core.Extensions.Encode;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -62,7 +63,7 @@ namespace Infrastructure.Helpers
                     break;
 
                 case BsonType.String:
-                    tempValue = bsonValue.AsString;
+                    tempValue = bsonValue.AsString.ToUTF8();
                     break;
 
                 case BsonType.Array:
@@ -174,7 +175,7 @@ namespace Infrastructure.Helpers
                     break;
 
                 case BsonType.String:
-                    tempValue = bsonValue.AsString;
+                    tempValue = bsonValue.AsString.ToUTF8();
                     break;
 
                 case BsonType.ObjectId:

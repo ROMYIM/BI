@@ -1,4 +1,5 @@
 ﻿using Core.DataBase.Mongo;
+using Core.Extensions.Encode;
 using Domain.DataSynchronization.Managers;
 using Infrastructure.Db.Dtoes.Pg;
 using Infrastructure.Exceptions;
@@ -9,6 +10,7 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using MongoOrder = Infrastructure.Db.Dotes.Mongo.OrderEntity.OrderParent;
 using PgOrder = Infrastructure.Db.Dtoes.Pg.OrderParent;
 
@@ -23,7 +25,7 @@ namespace Domain.DataSynchronization
 
         protected override void DoSynchronize(MongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
         {
-            var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCount).ToList();
+            var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCount).SetBatchSize(synchronizeCount).ToList();
 
             var orderInsertData = new List<PgOrder>(documents.Count);
             var apiOrderIdInsertData = new LinkedList<OrderApiOrderId>();
@@ -78,10 +80,12 @@ namespace Domain.DataSynchronization
                             foreach (var remark in remarks)
                             {
                                 if (remark.BsonType == BsonType.Null) continue;
+
+                                var encoding = Encoding.GetEncoding(remark.AsString);
                                 var remarkEntity = new OrderRemark()
                                 {
                                     
-                                    Remark = remark.AsString,
+                                    Remark = remark.AsString.ToUTF8(),
                                     OrderId = orderId,
                                 };
                                 remarkInsertData.AddLast(remarkEntity);

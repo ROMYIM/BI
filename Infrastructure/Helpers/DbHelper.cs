@@ -10,6 +10,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infrastructure.Helpers
@@ -28,13 +29,73 @@ namespace Infrastructure.Helpers
             return type.GetCustomAttribute<TableAttribute>()?.Name ?? type.Name;
         }
 
+        public static async Task<ulong> BatchInsertAsync<T>(this FlytBIDbContext dbContext,
+            IReadOnlyCollection<T> toInsertData, CancellationToken token = default)
+        {
+            if (!(toInsertData?.Any() ?? false)) return 0;
+
+            var isSelfControll = false;
+            var connectionString = dbContext.Database.GetDbConnection().ConnectionString;
+            var conn = new NpgsqlConnection(connectionString);
+
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                isSelfControll = true;
+                await conn.OpenAsync(token);
+            }
+
+            var idRecords = new string[toInsertData.Count];
+            var i = 0;
+
+            try
+            {
+
+                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, SqlFormatter<T>.Table);
+                using var writer = conn.BeginBinaryImport(copyCommand);
+                foreach (var data in toInsertData)
+                {
+                    await writer.StartRowAsync(token);
+                    foreach (var field in SqlFormatter<T>.Fields)
+                    {
+                        var fieldInfo = field.Field;
+                        var fieldValue = fieldInfo.GetValue(data);
+                        if (field.IsKey && !SqlFormatter<T>.IsChildrenTable)
+                            idRecords[i++] = fieldValue.ToString();
+                        else if (SqlFormatter<T>.IsChildrenTable && field.IsRelationKey)
+                            idRecords[i++] = fieldValue.ToString();
+                        if (!field.IsDatabaseGernerated)
+                            await writer.WriteAsync(fieldValue, token);
+                    }
+                    //await writer.WriteAsync(field.Field.GetValue(data));
+
+                }
+                return await writer.CompleteAsync(token);
+                //await tran.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                if (ex is AggregateException aex)
+                {
+                    ex = aex.InnerException;
+                }
+                throw new DataSynchronizationException(idRecords, SqlFormatter<T>.Table, ex);
+            }
+            finally
+            {
+                if (isSelfControll)
+                    await conn.CloseAsync();
+            }
+
+        }
+
         public static void BatchInsert<T>(this FlytBIDbContext dbContext, 
             IReadOnlyCollection<T> toInsertData)
         {
             if (!(toInsertData?.Any() ?? false)) return;
 
             var isSelfControll = false;
-            var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
+            var connectionString = dbContext.Database.GetDbConnection().ConnectionString;
+            var conn = new NpgsqlConnection(connectionString);
 
             if (conn.State != System.Data.ConnectionState.Open)
             {

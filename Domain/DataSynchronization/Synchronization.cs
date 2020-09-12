@@ -14,6 +14,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -27,6 +28,8 @@ namespace Domain.DataSynchronization.Managers
         private const int MoreThreadsToInsertDataCount = 1_000_000;
 
         protected readonly ILogger _logger;
+
+        protected readonly Stopwatch _stopwatch;
 
         protected readonly MongoDbContext _mongoDbContext;
 
@@ -54,6 +57,7 @@ namespace Domain.DataSynchronization.Managers
             _serviceProvider = serviceProvider;
             _logger = loggerFactory.CreateLogger(GetType());
             TokenSource = new CancellationTokenSource();
+            _stopwatch = new Stopwatch();
         }
 
         public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime)

@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using MongoOrder = Infrastructure.Db.Dotes.Mongo.OrderEntity.OrderParent;
 using PgOrder = Infrastructure.Db.Dtoes.Pg.OrderParent;
@@ -23,7 +24,10 @@ namespace Domain.DataSynchronization
 
         protected override void DoSynchronize(MongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
         {
-            var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCount).ToList();
+            _stopwatch.Restart();
+            var documents = collection.FindAll().SetBatchSize(synchronizeCount).SetSkip(startIndex).SetLimit(synchronizeCount).ToList();
+            _stopwatch.Stop();
+            _logger.LogInformation("mongo库查询。数量{}。耗时{}", synchronizeCount, _stopwatch.Elapsed.TotalSeconds);
 
             var orderInsertData = new List<PgOrder>(documents.Count);
             var apiOrderIdInsertData = new LinkedList<OrderApiOrderId>();
@@ -34,6 +38,7 @@ namespace Domain.DataSynchronization
             var haikwanDetailInsertData = new LinkedList<HaikwanDetail>();
             var multiPackageIdInsertData = new LinkedList<OrderMultiPackageId>();
 
+            _stopwatch.Restart();
             foreach (var document in documents)
             {
 
@@ -202,7 +207,10 @@ namespace Domain.DataSynchronization
 
                 orderInsertData.Add(pgOrder);
             }
+            _stopwatch.Stop();
+            _logger.LogInformation("数据转换。耗时{}", _stopwatch.Elapsed.TotalSeconds);
 
+            _stopwatch.Restart();
             _flytBIDbContext.BatchInsert(orderInsertData);
             _flytBIDbContext.BatchInsert(remarkInsertData);
             _flytBIDbContext.BatchInsert(orderDetailInsertData);
@@ -211,6 +219,8 @@ namespace Domain.DataSynchronization
             _flytBIDbContext.BatchInsert(salesRecordNumberInsetData);
             _flytBIDbContext.BatchInsert(multiPackageIdInsertData);
             _flytBIDbContext.BatchInsert(haikwanDetailInsertData);
+            _stopwatch.Stop();
+            _logger.LogInformation("数据插入。耗时{}", _stopwatch.Elapsed.TotalSeconds);
         }
     }
 }

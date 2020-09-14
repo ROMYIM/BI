@@ -13,13 +13,13 @@ namespace Core.Extensions.Encode
                 return originalString;
             }
 
-            var encoding = Encoding.GetEncoding(originalString);
-            if (encoding == Encoding.UTF8)
+            if (originalString.AsSpan().Contains('\u0000'))
             {
-                return originalString;
+                originalString = originalString.Replace("\u0000", string.Empty);
             }
-
-            return Encoding.UTF8.GetString(encoding.GetBytes(originalString));
+                
+            var encoding = Encoding.UTF8;
+            return encoding.GetString(encoding.GetBytes(originalString));
         }
     }
 }

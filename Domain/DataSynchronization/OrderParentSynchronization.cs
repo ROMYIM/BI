@@ -85,8 +85,6 @@ namespace Domain.DataSynchronization
                             foreach (var remark in remarks)
                             {
                                 if (remark.BsonType == BsonType.Null) continue;
-
-                                var encoding = Encoding.GetEncoding(remark.AsString);
                                 var remarkEntity = new OrderRemark()
                                 {
                                     

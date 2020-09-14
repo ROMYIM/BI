@@ -44,7 +44,7 @@ namespace FlytexpressBI.Controllers
         [Route("sync/order")]
         public IActionResult OrderSynchronize()
         {
-            _ = _orderSynchronization.SynchronizeDataAsync(17624000, 10000);
+            _ = _orderSynchronization.SynchronizeDataAsync(35304000, 10000);
             return Ok();
         }
 

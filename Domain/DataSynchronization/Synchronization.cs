@@ -1,23 +1,17 @@
-﻿using AutoMapper;
-using Core.DataBase.Mongo;
+﻿using Core.DataBase.Mongo;
+using Core.Extensions.Database.Query;
 using Infrastructure.Db.Contexts;
 using Infrastructure.Exceptions;
 using Infrastructure.Helpers;
-using Infrastructure.Schedule.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
-using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +19,10 @@ namespace Domain.DataSynchronization.Managers
 {
     public abstract class Synchronization<TMongo, TPgSQL> where TMongo : class, new() where TPgSQL : class, new()
     {
-        private const int MoreThreadsToInsertDataCount = 1_000_000;
+
+        #region 字段
+
+        protected const string UtcModifyTime = "UtcModifyTime";
 
         protected readonly ILogger _logger;
 
@@ -41,7 +38,15 @@ namespace Domain.DataSynchronization.Managers
 
         protected static readonly string TableName;
 
+        #endregion
+
         public CancellationTokenSource TokenSource { get; }
+
+        protected virtual FindOptions<BsonDocument> FindOptions { get; set; } = new FindOptions<BsonDocument>
+        {
+            BatchSize = 2000,
+            Sort = new SortDefinitionBuilder<BsonDocument>().Ascending(d => d[UtcModifyTime])
+        };
 
         static Synchronization()
         {
@@ -60,7 +65,7 @@ namespace Domain.DataSynchronization.Managers
             _stopwatch = new Stopwatch();
         }
 
-        public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime)
+        public virtual Task SynchronizeDataAsync(DateTime startTime, TimeSpan synchronizeDuration, DateTime endTime = default)
         {
             Initialize();
 
@@ -77,52 +82,23 @@ namespace Domain.DataSynchronization.Managers
                     var mongoDtoType = typeof(TMongo);
                     var collection = _mongoDbContext.Collection(mongoDtoType);
 
+                    ///结束时间
+                    if (endTime == default) endTime = DateTime.UtcNow.Date;
+
                     ///计算一个表数据要同步的次数
-                    var totalCount = collection.Count() - startIndex;
-                    if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
+                    var totalCount = await collection.EstimatedDocumentCountAsync();
 
                     _logger.LogInformation("总数量：{}", totalCount);
                     _logger.LogInformation("导入中");
 
-                    ///如果数据量大于阈值（暂定一千万）就开启多线程同步
-                    if (totalCount >= MoreThreadsToInsertDataCount)
+                    for (; startTime < endTime; startTime += synchronizeDuration)
                     {
-                        
-                        var synchronizeCountPerTask = MoreThreadsToInsertDataCount;
-                        var taskCount = totalCount / synchronizeCountPerTask;
+                        //if (CheckCancellRequested(startIndex)) return;
 
-                        for (int i = 0; i < taskCount; i++)
-                        {
-                            if (CheckCancellRequested(startIndex)) return;
-
-                            await Task.Factory.StartNew(() =>
-                            {
-                                _logger.LogInformation("线程id：{}", Thread.CurrentThread.ManagedThreadId);
-
-                                for (int j = 0; j < synchronizeCountPerTask; j += synchronizeCountPerTime, startIndex += synchronizeCountPerTime)
-                                {
-                                    if (CheckCancellRequested(startIndex)) return;
-
-                                    _logger.LogInformation("更新索引：{}", startIndex);
-                                    DoSynchronize(collection, startIndex, synchronizeCountPerTime);
-                                }
-                            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-                            await Task.Delay(TimeSpan.FromSeconds(5));
-                        }
+                        _logger.LogInformation("更新索引：{}", startTime);
+                        await DoSynchronizeAsync(collection, startTime, synchronizeDuration);
                     }
-                    else
-                    {
 
-                        for (int j = 0; j < totalCount; j += synchronizeCountPerTime, startIndex += synchronizeCountPerTime)
-                        {
-                            if (CheckCancellRequested(startIndex)) return;
-
-                            _logger.LogInformation("更新索引：{}", startIndex);
-                            DoSynchronize(collection, startIndex, synchronizeCountPerTime);
-                        }
-                    }
-                   
 
                 }
                 catch (Exception ex)
@@ -135,59 +111,111 @@ namespace Domain.DataSynchronization.Managers
 
         }
 
-
-        protected virtual void DoSynchronize(MongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
+        /// <summary>
+        /// 一般普通数据表的同步
+        /// </summary>
+        /// <param name="collection">文档集合</param>
+        /// <param name="synchronizeTime">开始同步历史数据的时间</param>
+        /// <param name="synchronizeDuration">历史数据的时长</param>
+        /// <returns>同步数量</returns>
+        protected virtual async Task<ulong> DoSynchronizeAsync(IMongoCollection<BsonDocument> collection, DateTime synchronizeTime, TimeSpan synchronizeDuration)
         {
-            var documents = collection.FindAll().SetSkip(startIndex).SetLimit(synchronizeCount).ToList();
-            var mongoErrors = new List<(BsonValue, string)>(documents.Count);
-            var insertData = new List<TPgSQL>(documents.Count);
+            var syncCount = default(ulong);
 
-            BsonValue id = null;
-            try
+            using var asyncCursor = await collection.FindDocumentsCursorAsync(
+                document => document[UtcModifyTime] >= synchronizeTime && document[UtcModifyTime] <= synchronizeTime + synchronizeDuration, batchSize: 3000);
+            while (await asyncCursor.MoveNextAsync())
             {
-                /// 查询并转换为pg实体
-                foreach (var document in documents)
-                {
+                var documents = asyncCursor.Current;
+                var mongoErrors = new LinkedList<(BsonValue, string)>();
+                var insertData = new LinkedList<TPgSQL>();
 
-                    var pgEntity = new TPgSQL();
-                    var properties = typeof(TPgSQL).GetProperties();
-                    foreach (var element in document.Elements)
+                BsonValue id = null;
+                try
+                {
+                    /// 查询并转换为pg实体
+                    foreach (var document in documents)
                     {
-                        if (element.Name == "_id")
-                        {
-                            id = element.Value;
-                            var idProperty = properties.Where(p => p.Name == "Id").First();
-                            idProperty.SetValue(pgEntity, element.GetValue(idProperty.PropertyType));
-                        }
-                        else
+
+                        var pgEntity = new TPgSQL();
+                        var properties = typeof(TPgSQL).GetProperties();
+
+                        ///优先构建主键属性
+                        var idElement = document.Elements.Where(d => d.Name == "_id").First();
+                        id = idElement.Value;
+                        var idProperty = properties.Where(p => p.Name == "Id").First();
+                        idProperty.SetValue(pgEntity, idElement.GetValue(idProperty.PropertyType));
+
+                        ///构建其他属性
+                        foreach (var element in document.Elements)
                         {
                             var property = properties.Where(p => p.Name.ToLower() == element.Name.ToLower()).FirstOrDefault();
                             property?.SetValue(pgEntity, element.GetValue(property.PropertyType));
                         }
-                    }
-                    insertData.Add(pgEntity);
+                        insertData.AddLast(pgEntity);
 
+                    }
+
+                    var commitCount = _flytBIDbContext.BatchInsert(insertData);
+                    syncCount += commitCount;
+                }
+                catch (Exception ex)
+                {
+                    throw new DataSynchronizationException(id, TableName, ex);
                 }
 
-                _flytBIDbContext.BatchInsert(insertData);
-            }
-            catch (Exception ex)
-            {
-                throw new DataSynchronizationException(id, TableName, ex);
             }
 
+            _logger.LogInformation("更新数量{}", syncCount);
+            return syncCount;
         }
 
-        protected virtual bool CheckCancellRequested(int currentIndex)
+        /// <summary>
+        /// 根据时间段返回文档型的数据。
+        /// 慎用。如果返回的文档数据过多会占用极高的内存。
+        /// 推荐使用<see cref="MongoExtension.FindDocumentsCursorAsync(IMongoCollection{BsonDocument}, Expression{Func{BsonDocument, bool}}, int, int?, int?)"/>
+        /// </summary>
+        /// <param name="collection">表集合</param>
+        /// <param name="startTime">开始时间</param>
+        /// <param name="duration">时长</param>
+        /// <returns>只读文档集合</returns>
+        [Obsolete("一次性返回文档数量会占用过多的内存", false)]
+        protected async ValueTask<IReadOnlyCollection<BsonDocument>> GetMongoDocumentsByDuration(IMongoCollection<BsonDocument> collection, DateTime startTime, TimeSpan duration)
+        {
+            Expression<Func<BsonDocument, bool>> query = b => b[UtcModifyTime] >= startTime && b[UtcModifyTime] <= startTime + duration;
+
+            _stopwatch.Restart();
+            var documents = await collection.FindDocumentsAsync(query);
+            _stopwatch.Stop();
+            _logger.LogInformation("mongo库查询。数量{}。耗时{}", documents.Count, _stopwatch.Elapsed.TotalSeconds);
+            return documents;
+        }
+
+        protected virtual bool CheckCancellRequested()
         {
             if (TokenSource.Token.IsCancellationRequested)
             {
                 _logger.LogInformation("任务被手动终止");
-                _logger.LogInformation("当前索引：{}", currentIndex);
                 return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 根据时间给出表名的后缀
+        /// 按两个月一分。1、3、5、7、9、11月
+        /// 示例：<code>{表名}_202001</code><code>{表名}_202003</code>
+        /// </summary>
+        /// <param name="time">时间</param>
+        /// <returns>表名后缀</returns>
+        protected virtual string GetTableSuffix(DateTime time = default)
+        {
+            if (time == default) return string.Empty;
+
+            var year = time.Year.ToString("D4");
+            var month = (time.Month % 2 == 0 ? time.Month - 1 : time.Month).ToString("D2");
+            return year + month;
         }
 
         protected void Dispose()
@@ -200,12 +228,8 @@ namespace Domain.DataSynchronization.Managers
 
         private void Initialize()
         {
-            _logger.LogInformation("创建作用域前");
-
             _serviceScope = _serviceProvider.CreateScope();
             _flytBIDbContext = _serviceScope.ServiceProvider.GetRequiredService<FlytBIDbContext>();
-
-            _logger.LogInformation("创建作用域后");
         }
     }
 }

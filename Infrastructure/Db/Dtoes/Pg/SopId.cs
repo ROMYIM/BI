@@ -11,7 +11,8 @@ namespace Infrastructure.Db.Dtoes.Pg
     {
         [Key]
         [Column("Id")]
-        public string Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         [Column("OpId")]
         public string OpId { get; set; }

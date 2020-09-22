@@ -1,4 +1,5 @@
 using System;
+using Application.Queries;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
 using AutoMapper;
@@ -40,7 +41,11 @@ namespace FlytexpressBI
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddSingleton(serviceProvider => serviceProvider);
+            #region 查询服务
+
+            services.AddTransient<DataQueryService>();
+
+            #endregion
 
             #region 本地缓存注册
 

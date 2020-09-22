@@ -26,7 +26,7 @@ namespace Infrastructure.Exceptions
         public DataSynchronizationException(IList<string> idRecords, string tableName, Exception ex) : base(default, ex)
         {
             _tableName = tableName;
-            if (ex is PostgresException pe)
+            if (ex is NpgsqlException pe) 
             {
                 var index = -1;
 
@@ -50,7 +50,8 @@ namespace Infrastructure.Exceptions
                     index = Convert.ToInt32(pe.Data["Line"]);
                 }
 
-                _id = idRecords[index];
+                if (index >= 0 && index < idRecords.Count) _id = idRecords[index];
+                else _id = string.Format("无法定位id。请参考【{0}】", idRecords[0]);
             }
         }
 

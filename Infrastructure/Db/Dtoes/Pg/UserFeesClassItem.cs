@@ -13,7 +13,8 @@ namespace Infrastructure.Db.Dtoes.Pg
     public class UserFeesClassItem
     {
         [Key]
-        public string Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         ///<summary>
         ///科目序号

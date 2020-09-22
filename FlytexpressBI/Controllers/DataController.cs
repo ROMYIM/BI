@@ -1,17 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Domain.DataSynchronization;
 using Domain.DataSynchronization.Managers;
 using Domain.Schedule.Managers;
-using Infrastructure.Db.Contexts;
-using Infrastructure.Db.Dtoes.Mongo.Bill;
-using Infrastructure.Db.Dtoes.Pg;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace FlytexpressBI.Controllers
 {
@@ -36,31 +27,31 @@ namespace FlytexpressBI.Controllers
 
         public IActionResult Index()
         {
-            _ = _synchronization.SynchronizeDataAsync(0, 1000);
+            _ = _synchronization.SynchronizeDataAsync(new DateTime(2019, 1, 1), TimeSpan.FromDays(1));
             //_ = _syncJob.SynchronizeData(1000, new CancellationTokenSource().Token);
             return Ok();
         }
 
-        [Route("sync/order")]
-        public IActionResult OrderSynchronize()
+        [Route("sync/orders")]
+        public IActionResult OrderSynchronize(DateTime startTime, DateTime endTime)
         {
-            _ = _orderSynchronization.SynchronizeDataAsync(35304000, 10000);
+            _ = _orderSynchronization.SynchronizeDataAsync(startTime, TimeSpan.FromDays(1), endTime);
             return Ok();
         }
 
-        [Route("sync/usermoneyrecord")]
-        public IActionResult UserMoneyRecordSynchronize()
+        [Route("sync/usermoneyrecords")]
+        public IActionResult UserMoneyRecordSynchronize(DateTime startTime, DateTime endTime)
         {
-            _ = _synchronization.SynchronizeDataAsync(0, 1000);
+            _ = _synchronization.SynchronizeDataAsync(startTime, TimeSpan.FromDays(1), endTime);
             //_ = _syncJob.SynchronizeData(1000, new CancellationTokenSource().Token);
             return Ok();
         }
 
         [Route("init")]
-        public IActionResult InitializeData()
+        public IActionResult InitializeData(DateTime startTime)
         {
             
-            return Ok();
+            return Ok(startTime);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Core.DataBase.Mongo.DbAccessor;
 using Core.DataBase.Mongo.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -9,10 +10,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Core.DataBase.Mongo
 {
@@ -42,6 +45,16 @@ namespace Core.DataBase.Mongo
         /// MongoDB客户端
         /// </summary>
         private readonly MongoClient _client;
+
+        /// <summary>
+        /// 日志组件
+        /// </summary>
+        private readonly ILogger _logger;
+
+        /// <summary>
+        /// 监控性能用
+        /// </summary>
+        private readonly Stopwatch _stopwatch = new Stopwatch();
 
         /// <summary>
         /// 表名字典
@@ -79,7 +92,7 @@ namespace Core.DataBase.Mongo
         /// 构造函数。依赖注入选线参数
         /// </summary>
         /// <param name="options"></param>
-        public MongoDbContext(IOptions<MongoDbOptions> options)
+        public MongoDbContext(IOptions<MongoDbOptions> options, ILoggerFactory loggerFactory)
         {
             //InitMember(connectionString.ConnectionString, connectionString.Database);
             _collectionSettings = new MongoCollectionSettings
@@ -88,8 +101,8 @@ namespace Core.DataBase.Mongo
                 WriteConcern = WriteConcern.WMajority
                
             };
-            
 
+            _logger = loggerFactory.CreateLogger(GetType());
             _options = options.Value;
             _client = new MongoClient(new MongoUrl(_options.ConnectionString));
             _database = _client.GetDatabase(_options.Database);
@@ -101,14 +114,39 @@ namespace Core.DataBase.Mongo
 
         }
 
+        public virtual async Task<IReadOnlyCollection<BsonDocument>> GetMongoDocumentsAsync<TMongo>(Expression<Func<BsonDocument, bool>> query, int batchSize = 1000, int? skip = null, int? limit = null)
+        {
+            if (query == null) throw new ArgumentNullException(nameof(query));
+
+            var collection = Collection(typeof(TMongo));
+            var findOptions = new FindOptions<BsonDocument>
+            {
+                Skip = skip,
+                Limit = limit,
+            };
+
+            var totalCount = await collection.CountDocumentsAsync(query);
+            if (totalCount > batchSize)
+                findOptions.BatchSize = batchSize;
+            else
+                findOptions.BatchSize = (int)totalCount;
+
+            _stopwatch.Restart();
+            var asyncCursor = await collection.FindAsync(filter: query, options: findOptions);
+            var documents = asyncCursor.ToList();
+            _stopwatch.Stop();
+            _logger.LogInformation("mongo库查询。数量{}。耗时{}", documents.Count, _stopwatch.Elapsed.TotalSeconds);
+            return documents;
+        }
+
         /// <summary>
         /// 获取某个表的文档集合
         /// </summary>
         /// <param name="tableName">表名</param>
         /// <returns>文档集合</returns>
-        public MongoCollection<BsonDocument> Collection(string tableName)
+        public IMongoCollection<BsonDocument> Collection(string tableName)
         {
-            return Database.GetCollection(tableName, _collectionSettings);
+            return _database.GetCollection<BsonDocument>(tableName, _collectionSettings);
         }
 
         /// <summary>
@@ -116,7 +154,7 @@ namespace Core.DataBase.Mongo
         /// </summary>
         /// <param name="mongoDtoType">dto类型</param>
         /// <returns>文档集合</returns>
-        public MongoCollection<BsonDocument> Collection(Type mongoDtoType)
+        public IMongoCollection<BsonDocument> Collection(Type mongoDtoType)
         {
             var tableAttribute = mongoDtoType.GetCustomAttribute<TableAttribute>();
             var tableName = tableAttribute?.Name ?? mongoDtoType.Name;

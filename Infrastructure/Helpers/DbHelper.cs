@@ -29,10 +29,18 @@ namespace Infrastructure.Helpers
             return type.GetCustomAttribute<TableAttribute>()?.Name ?? type.Name;
         }
 
+        private static string GetTableName(string originalTableName, string tableNameSuffix)
+        {
+            if (string.IsNullOrWhiteSpace(tableNameSuffix)) return originalTableName;
+            return originalTableName + "_" + tableNameSuffix;
+        }
+
         public static async Task<ulong> BatchInsertAsync<T>(this FlytBIDbContext dbContext,
-            IReadOnlyCollection<T> toInsertData, CancellationToken token = default)
+            IReadOnlyCollection<T> toInsertData, string tableSuffix = "", CancellationToken token = default)
         {
             if (!(toInsertData?.Any() ?? false)) return 0;
+
+            var tableName = GetTableName(SqlFormatter<T>.Table, tableSuffix);
 
             var isSelfControll = false;
             var connectionString = dbContext.Database.GetDbConnection().ConnectionString;
@@ -49,8 +57,7 @@ namespace Infrastructure.Helpers
 
             try
             {
-
-                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, SqlFormatter<T>.Table);
+                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, tableName);
                 using var writer = conn.BeginBinaryImport(copyCommand);
                 foreach (var data in toInsertData)
                 {
@@ -78,7 +85,17 @@ namespace Infrastructure.Helpers
                 {
                     ex = aex.InnerException;
                 }
-                throw new DataSynchronizationException(idRecords, SqlFormatter<T>.Table, ex);
+
+                if (ex is PostgresException pe && pe.SqlState == PostgresErrorCodes.AdminShutdown)
+                {
+                    Console.WriteLine("{}. sleep one second and try again", pe.MessageText);
+                    await conn.CloseAsync();
+
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    return await BatchInsertAsync(dbContext, toInsertData, tableSuffix, token);
+                }
+
+                throw new DataSynchronizationException(idRecords, tableName, ex);
             }
             finally
             {
@@ -88,10 +105,12 @@ namespace Infrastructure.Helpers
 
         }
 
-        public static void BatchInsert<T>(this FlytBIDbContext dbContext, 
-            IReadOnlyCollection<T> toInsertData)
+        public static ulong BatchInsert<T>(this FlytBIDbContext dbContext, 
+            IReadOnlyCollection<T> toInsertData, string tableSuffix = "")
         {
-            if (!(toInsertData?.Any() ?? false)) return;
+            if (!(toInsertData?.Any() ?? false)) return 0;
+
+            var tableName = GetTableName(SqlFormatter<T>.Table, tableSuffix);
 
             var isSelfControll = false;
             var connectionString = dbContext.Database.GetDbConnection().ConnectionString;
@@ -103,13 +122,14 @@ namespace Infrastructure.Helpers
                 conn.Open();
             }
 
+            Console.WriteLine("会话超时时间:{0}", conn.CommandTimeout);
+
             var idRecords = new string[toInsertData.Count];
             var i = 0;
 
             try
             {
-
-                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, SqlFormatter<T>.Table);
+                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, tableName);
                 using var writer = conn.BeginBinaryImport(copyCommand);
                 foreach (var data in toInsertData)
                 {
@@ -129,24 +149,29 @@ namespace Infrastructure.Helpers
 
                 }
                 writer.Complete();
+                return (ulong)toInsertData.Count;
+
                 //await tran.CommitAsync();
             }
             catch (Exception ex)
             {
+               
                 throw new DataSynchronizationException(idRecords, SqlFormatter<T>.Table, ex);
             }
             finally
             {
-                if (isSelfControll)
+                if (isSelfControll && conn.State != System.Data.ConnectionState.Closed)
                     conn.Close();
             }
 
         }
 
         public static void BatchInsert(this FlytBIDbContext dbContext,
-           ICollection toInsertData, PgDtoTypeCache typeCache)
+           ICollection toInsertData, PgDtoTypeCache typeCache, string tableSuffix = "")
         {
             if (toInsertData == null) return;
+
+            var tableName = GetTableName(typeCache.Table, tableSuffix);
 
             var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
             var isSelfControll = false;
@@ -162,7 +187,7 @@ namespace Infrastructure.Helpers
             try
             {
 
-                var copyCommand = BuildBulkCopyCommand(typeCache.Fields, typeCache.Table);
+                var copyCommand = BuildBulkCopyCommand(typeCache.Fields, tableName);
                 using var writer = conn.BeginBinaryImport(copyCommand);
                 foreach (var data in toInsertData)
                 {
@@ -182,7 +207,7 @@ namespace Infrastructure.Helpers
             }
             catch (Exception ex)
             {
-                throw new DataSynchronizationException(idRecords, typeCache.Table, ex);
+                throw new DataSynchronizationException(idRecords, tableName, ex);
             }
             finally
             {

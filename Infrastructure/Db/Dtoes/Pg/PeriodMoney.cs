@@ -10,7 +10,8 @@ namespace Infrastructure.Db.Dtoes.Pg
     public class PeriodMoney
     {
         [Key]
-        public string Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         public string PeriodKey { get; set; }
 

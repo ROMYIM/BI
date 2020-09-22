@@ -38,8 +38,8 @@ namespace Domain.TimingSynchronization
                 _logger.LogInformation("开始同步{}数据", TableName);
                 _logger.LogInformation("时间段{}~{}", beforeNow.ToString("G"), now.ToString("G"));
 
-                var query = Query.And(Query.GTE("UtcCreateTime", beforeNow), Query.LTE("UtcCreateTime", now));
-                var documents = _mongoDbContext.Collection(typeof(TMongo)).Find(query).SetBatchSize(1000).ToList();
+                //var query = Query.And(Query.GTE("UtcCreateTime", beforeNow), Query.LTE("UtcCreateTime", now));
+                //var documents = _mongoDbContext.Collection(typeof(TMongo)).Find(query).SetBatchSize(1000).ToList();
 
                 
 
@@ -48,13 +48,13 @@ namespace Domain.TimingSynchronization
 
         protected virtual void DoNewDataSynchronization(DateTime startTime, DateTime endTime)
         {
-            int synchronizeCountPerTime = 1000;
+            //int synchronizeCountPerTime = 1000;
 
-            var query = Query.And(Query.GTE("UtcCreateTime", startTime), Query.LTE("UtcCreateTime", endTime));
-            var synchronizationCollection = _mongoDbContext.Collection(typeof(TMongo)).Find(query);
+            //var query = Query.And(Query.GTE("UtcCreateTime", startTime), Query.LTE("UtcCreateTime", endTime));
+            //var synchronizationCollection = _mongoDbContext.Collection(typeof(TMongo)).Find(query);
 
-            var totalCount = synchronizationCollection.Count();
-            if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
+            //var totalCount = synchronizationCollection.Count();
+            //if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
         }
     }
 }

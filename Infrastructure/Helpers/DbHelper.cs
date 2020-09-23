@@ -88,7 +88,7 @@ namespace Infrastructure.Helpers
 
                 if (ex is PostgresException pe && pe.SqlState == PostgresErrorCodes.AdminShutdown)
                 {
-                    Console.WriteLine("{}. sleep one second and try again", pe.MessageText);
+                    Console.WriteLine("{0}. sleep one second and try again", pe.MessageText);
                     await conn.CloseAsync();
 
                     await Task.Delay(TimeSpan.FromSeconds(1));

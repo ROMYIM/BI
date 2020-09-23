@@ -28,7 +28,7 @@ namespace Domain.DataSynchronization
             : base(mongoDbContext, loggerFactory, serviceProvider)
         {
             _findOptions = base.FindOptions;
-            _findOptions.BatchSize = 500;
+            _findOptions.BatchSize = 1000;
         }
 
         protected override FindOptions<BsonDocument> FindOptions { get => _findOptions; set => _findOptions = value; }
@@ -141,31 +141,31 @@ namespace Domain.DataSynchronization
                                     salesRecordNumberInsetData.AddLast(salesRecordNumberEntity);
                                 }
                             }
-                            else if (element.Name == "OrderDetailList")
-                            {
-                                if (!element.Value.IsBsonArray) continue;
+                            //else if (element.Name == "OrderDetailList")
+                            //{
+                            //    if (!element.Value.IsBsonArray) continue;
 
-                                var orderDetailList = element.Value.AsBsonArray;
-                                foreach (var orderDetail in orderDetailList)
-                                {
-                                    if (orderDetail.IsBsonNull) continue;
-                                    var orderDetailEntity = new OrderDetail()
-                                    {
+                            //    var orderDetailList = element.Value.AsBsonArray;
+                            //    foreach (var orderDetail in orderDetailList)
+                            //    {
+                            //        if (orderDetail.IsBsonNull) continue;
+                            //        var orderDetailEntity = new OrderDetail()
+                            //        {
 
-                                        OrderId = orderId
-                                    };
+                            //            OrderId = orderId
+                            //        };
 
-                                    var detailDocument = orderDetail.AsBsonDocument;
-                                    var detailType = orderDetailEntity.GetType();
-                                    foreach (var detailElement in detailDocument.Elements)
-                                    {
-                                        var property = detailType.GetProperty(detailElement.Name);
-                                        property?.SetValue(orderDetailEntity, detailElement.GetValue(property.PropertyType));
-                                    }
+                            //        var detailDocument = orderDetail.AsBsonDocument;
+                            //        var detailType = orderDetailEntity.GetType();
+                            //        foreach (var detailElement in detailDocument.Elements)
+                            //        {
+                            //            var property = detailType.GetProperty(detailElement.Name);
+                            //            property?.SetValue(orderDetailEntity, detailElement.GetValue(property.PropertyType));
+                            //        }
 
-                                    orderDetailInsertData.AddLast(orderDetailEntity);
-                                }
-                            }
+                            //        orderDetailInsertData.AddLast(orderDetailEntity);
+                            //    }
+                            //}
                             else if (element.Name == "HaikwanDetialList")
                             {
                                 if (!element.Value.IsBsonArray) continue;

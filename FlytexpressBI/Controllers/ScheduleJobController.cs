@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
 using Core.BackgroundService;
-using Domain.Schedule.Managers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -20,18 +19,14 @@ namespace FlytexpressBI.Controllers
     {
         private readonly ILogger _logger;
 
-        private readonly DataSynchornizationJob _synchronizationJob;
-
         private readonly IDataSynchorizationService _dataSyncService;
 
         public ScheduleJobController(
             ILoggerFactory loggerFactory,
-            DataSynchornizationJob job,
             DataSynchronizationService dataSynchronizationService)
         {
             _logger = loggerFactory.CreateLogger(GetType());
             _dataSyncService = dataSynchronizationService;
-            _synchronizationJob = job;
         }
 
         [Route("stop")]

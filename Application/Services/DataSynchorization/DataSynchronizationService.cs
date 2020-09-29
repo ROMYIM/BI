@@ -1,16 +1,10 @@
 ﻿using Application.Services.DataSynchorization;
-using Core.BackgroundService;
 using Domain.Schedule.Entities;
-using Domain.Schedule.Managers;
 using Infrastructure.Schedule.Service;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Quartz;
-using Quartz.Impl;
 using Quartz.Spi;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 

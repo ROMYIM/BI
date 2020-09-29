@@ -1,10 +1,6 @@
 ﻿using Core.Domain.Entity;
-using Domain.Schedule.Managers;
 using Quartz;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Domain.Schedule.Entities
 {

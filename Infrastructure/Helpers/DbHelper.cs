@@ -105,116 +105,56 @@ namespace Infrastructure.Helpers
 
         }
 
-        public static ulong BatchInsert<T>(this FlytBIDbContext dbContext, 
-            IReadOnlyCollection<T> toInsertData, string tableSuffix = "")
-        {
-            if (!(toInsertData?.Any() ?? false)) return 0;
 
-            var tableName = GetTableName(SqlFormatter<T>.Table, tableSuffix);
+        //public static void BatchInsert(this FlytBIDbContext dbContext,
+        //   ICollection toInsertData, PgDtoTypeCache typeCache, string tableSuffix = "")
+        //{
+        //    if (toInsertData == null) return;
 
-            var isSelfControll = false;
-            var connectionString = dbContext.Database.GetDbConnection().ConnectionString;
-            var conn = new NpgsqlConnection(connectionString);
+        //    var tableName = GetTableName(typeCache.Table, tableSuffix);
 
-            if (conn.State != System.Data.ConnectionState.Open)
-            {
-                isSelfControll = true;
-                conn.Open();
-            }
+        //    var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
+        //    var isSelfControll = false;
+        //    if (conn.State != System.Data.ConnectionState.Open)
+        //    {
+        //        isSelfControll = true;
+        //        conn.Open();
+        //    }
 
-            Console.WriteLine("会话超时时间:{0}", conn.CommandTimeout);
+        //    var idRecords = new string[toInsertData.Count];
+        //    var i = 0;
 
-            var idRecords = new string[toInsertData.Count];
-            var i = 0;
+        //    try
+        //    {
 
-            try
-            {
-                var copyCommand = BuildBulkCopyCommand(SqlFormatter<T>.Fields, tableName);
-                using var writer = conn.BeginBinaryImport(copyCommand);
-                foreach (var data in toInsertData)
-                {
-                    writer.StartRow();
-                    foreach (var field in SqlFormatter<T>.Fields)
-                    {
-                        var fieldInfo = field.Field;
-                        var fieldValue = fieldInfo.GetValue(data);
-                        if (field.IsKey && !SqlFormatter<T>.IsChildrenTable)
-                            idRecords[i++] = fieldValue.ToString();
-                        else if (SqlFormatter<T>.IsChildrenTable && field.IsRelationKey)
-                            idRecords[i++] = fieldValue.ToString();
-                        if (!field.IsDatabaseGernerated)
-                            writer.Write(fieldValue);
-                    }
-                    //await writer.WriteAsync(field.Field.GetValue(data));
+        //        var copyCommand = BuildBulkCopyCommand(typeCache.Fields, tableName);
+        //        using var writer = conn.BeginBinaryImport(copyCommand);
+        //        foreach (var data in toInsertData)
+        //        {
+        //            writer.StartRow();
+        //            foreach (var field in typeCache.Fields)
+        //            {
+        //                var fieldInfo = field.Field;
+        //                var fieldValue = fieldInfo.GetValue(data);
+        //                if (field.IsKey) idRecords[i++] = fieldValue.ToString();
+        //                writer.Write(fieldValue);
+        //            }
+        //            //await writer.WriteAsync(field.Field.GetValue(data));
 
-                }
-                writer.Complete();
-                return (ulong)toInsertData.Count;
+        //        }
+        //        writer.Complete();
+        //        //await tran.CommitAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new DataSynchronizationException(idRecords, tableName, ex);
+        //    }
+        //    finally
+        //    {
+        //        if (isSelfControll) conn.Close();
+        //    }
 
-                //await tran.CommitAsync();
-            }
-            catch (Exception ex)
-            {
-               
-                throw new DataSynchronizationException(idRecords, SqlFormatter<T>.Table, ex);
-            }
-            finally
-            {
-                if (isSelfControll && conn.State != System.Data.ConnectionState.Closed)
-                    conn.Close();
-            }
-
-        }
-
-        public static void BatchInsert(this FlytBIDbContext dbContext,
-           ICollection toInsertData, PgDtoTypeCache typeCache, string tableSuffix = "")
-        {
-            if (toInsertData == null) return;
-
-            var tableName = GetTableName(typeCache.Table, tableSuffix);
-
-            var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
-            var isSelfControll = false;
-            if (conn.State != System.Data.ConnectionState.Open)
-            {
-                isSelfControll = true;
-                conn.Open();
-            }
-
-            var idRecords = new string[toInsertData.Count];
-            var i = 0;
-
-            try
-            {
-
-                var copyCommand = BuildBulkCopyCommand(typeCache.Fields, tableName);
-                using var writer = conn.BeginBinaryImport(copyCommand);
-                foreach (var data in toInsertData)
-                {
-                    writer.StartRow();
-                    foreach (var field in typeCache.Fields)
-                    {
-                        var fieldInfo = field.Field;
-                        var fieldValue = fieldInfo.GetValue(data);
-                        if (field.IsKey) idRecords[i++] = fieldValue.ToString();
-                        writer.Write(fieldValue);
-                    }
-                    //await writer.WriteAsync(field.Field.GetValue(data));
-
-                }
-                writer.Complete();
-                //await tran.CommitAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new DataSynchronizationException(idRecords, tableName, ex);
-            }
-            finally
-            {
-                if (isSelfControll) conn.Close();
-            }
-
-        }
+        //}
 
         private static string BuildBulkCopyCommand(EntityFeildInfo[] fields, string tableName)
         {

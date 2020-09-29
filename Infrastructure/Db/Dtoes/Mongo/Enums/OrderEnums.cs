@@ -312,4 +312,82 @@ namespace Infrastructure.Db.Dtoes.Mongo.Enums
         /// </summary>
         [Description("超偏远")] ExRemote = 3
     }
+
+    public enum OperationNode
+    {
+        /// <summary>
+        /// 下单
+        /// </summary>
+        CreateOrder = 1,
+
+        /// <summary>
+        /// 收货
+        /// </summary>
+        Receive = 2,
+
+        /// <summary>
+        /// 拣货
+        /// </summary>
+        Picking = 3,
+
+        /// <summary>
+        /// 中转出库
+        /// </summary>
+        TransitOutbound = 4,
+
+        /// <summary>
+        /// 中转签收
+        /// </summary>
+        TransitSign = 5,
+
+        /// <summary>
+        /// 移交渠道
+        /// </summary>
+        HandoverChannel = 6,
+
+        /// <summary>
+        /// 到港
+        /// </summary>
+        Arrival = 7,
+
+        /// <summary>
+        /// 出口报关
+        /// </summary>
+        ExportCustomsClearance = 8,
+
+        /// <summary>
+        /// 航班起飞
+        /// </summary>
+        FlightDeparture = 9,
+
+        /// <summary>
+        /// 航班落地
+        /// </summary>
+        FlightLanding = 10,
+
+        /// <summary>
+        /// 进口报关
+        /// </summary>
+        ImportCustomsClearance = 11,
+
+        /// <summary>
+        /// 移交尾程
+        /// </summary>
+        EndOfHandover = 12,
+
+        /// <summary>
+        /// 上网
+        /// </summary>
+        Internet = 13,
+
+        /// <summary>
+        /// 签收
+        /// </summary>
+        Sign = 14,
+
+        /// <summary>
+        /// 预上网
+        /// </summary>
+        PrepareInternet = 15,
+    }
 }

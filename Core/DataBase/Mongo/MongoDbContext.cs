@@ -86,8 +86,6 @@ namespace Core.DataBase.Mongo
             });
         }
 
-        public MongoDatabase Database { get => _client.GetServer().GetDatabase(_options.Database); }
-
         /// <summary>
         /// 构造函数。依赖注入选线参数
         /// </summary>
@@ -154,7 +152,7 @@ namespace Core.DataBase.Mongo
         /// </summary>
         /// <param name="mongoDtoType">dto类型</param>
         /// <returns>文档集合</returns>
-        public IMongoCollection<BsonDocument> Collection(Type mongoDtoType)
+        public IMongoCollection<BsonDocument> Collection(System.Type mongoDtoType)
         {
             var tableAttribute = mongoDtoType.GetCustomAttribute<TableAttribute>();
             var tableName = tableAttribute?.Name ?? mongoDtoType.Name;
@@ -354,8 +352,8 @@ namespace Core.DataBase.Mongo
         /// <returns></returns>
         private static bool IsDigitType(Type type)
         {
-            return type == Types.Int32 || type == Types.Int64 ||
-                          type == Types.Int16 || type == Types.UInt32;
+            return type == typeof(int) || type == typeof(long) || type == typeof(uint) ||
+                          type == typeof(short) || type == typeof(ulong);
         }
 
         /// <summary>

@@ -31,6 +31,7 @@ namespace Infrastructure.Db.Contexts
         public virtual DbSet<Airbatchflightinfo> Airbatchflightinfo { get; set; }
         public virtual DbSet<Airbatchorderdetail> Airbatchorderdetail { get; set; }
         public virtual DbSet<PostType> PostType { get; set; }
+        public virtual DbSet<TransferDetail> TransferDetails { get; set; }
         public virtual DbSet<Tableidcounter> Tableidcounter { get; set; }
         public virtual DbSet<Tbcorderparent> Tbcorderparent { get; set; }
         public virtual DbSet<Templatehistory> Templatehistory { get; set; }

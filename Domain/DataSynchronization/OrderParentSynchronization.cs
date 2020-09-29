@@ -22,16 +22,12 @@ namespace Domain.DataSynchronization
 {
     public class OrderParentSynchronization : Synchronization<MongoOrder, PgOrder>
     {
-        private FindOptions<BsonDocument> _findOptions;
 
         public OrderParentSynchronization(MongoDbContext mongoDbContext, ILoggerFactory loggerFactory, IServiceProvider serviceProvider) 
             : base(mongoDbContext, loggerFactory, serviceProvider)
         {
-            _findOptions = base.FindOptions;
             _findOptions.BatchSize = 1000;
         }
-
-        protected override FindOptions<BsonDocument> FindOptions { get => _findOptions; set => _findOptions = value; }
 
         protected override async Task<ulong> DoSynchronizeAsync(IMongoCollection<BsonDocument> collection, DateTime startTime, TimeSpan synchronizeDuration)
         {
@@ -47,7 +43,7 @@ namespace Domain.DataSynchronization
             var multiPackageIdInsertData = new LinkedList<OrderMultiPackageId>();
 
             using var asyncCursor = await collection.FindDocumentsCursorAsync(
-                d => d[UtcModifyTime] >= startTime && d[UtcModifyTime] < startTime + synchronizeDuration, FindOptions);
+                d => d[UtcModifyTime] >= startTime && d[UtcModifyTime] < startTime + synchronizeDuration, _findOptions);
             while (await asyncCursor.MoveNextAsync())
             {
                 var documents = asyncCursor.Current;

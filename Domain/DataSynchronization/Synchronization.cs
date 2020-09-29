@@ -17,13 +17,10 @@ using System.Threading.Tasks;
 
 namespace Domain.DataSynchronization.Managers
 {
-    public abstract class Synchronization<TMongo, TPgSQL> where TMongo : class, new() where TPgSQL : class, new()
+    public class Synchronization<TMongo, TPgSQL> where TMongo : class, new() where TPgSQL : class, new()
     {
 
         #region 字段
-
-        protected const string UtcModifyTime = "UtcModifyTime";
-
         protected readonly ILogger _logger;
 
         protected readonly Stopwatch _stopwatch;
@@ -36,17 +33,15 @@ namespace Domain.DataSynchronization.Managers
 
         protected IServiceScope _serviceScope;
 
+        protected FindOptions<BsonDocument> _findOptions;
+
         protected static readonly string TableName;
 
         #endregion
 
         public CancellationTokenSource TokenSource { get; }
 
-        protected virtual FindOptions<BsonDocument> FindOptions { get; set; } = new FindOptions<BsonDocument>
-        {
-            BatchSize = 2000,
-            Sort = new SortDefinitionBuilder<BsonDocument>().Ascending(d => d[UtcModifyTime])
-        };
+        protected virtual string UtcModifyTime { get => "UtcModifyTime"; }
 
         static Synchronization()
         {
@@ -63,6 +58,11 @@ namespace Domain.DataSynchronization.Managers
             _logger = loggerFactory.CreateLogger(GetType());
             TokenSource = new CancellationTokenSource();
             _stopwatch = new Stopwatch();
+            _findOptions = new FindOptions<BsonDocument>
+            {
+                BatchSize = 2000,
+                Sort = new SortDefinitionBuilder<BsonDocument>().Ascending(d => d[UtcModifyTime])
+            };
         }
 
         public virtual Task SynchronizeDataAsync(DateTime startTime, TimeSpan synchronizeDuration, DateTime endTime = default)
@@ -156,7 +156,7 @@ namespace Domain.DataSynchronization.Managers
 
                     }
 
-                    var commitCount = _flytBIDbContext.BatchInsert(insertData);
+                    var commitCount = await _flytBIDbContext.BatchInsertAsync(insertData);
                     syncCount += commitCount;
                 }
                 catch (Exception ex)

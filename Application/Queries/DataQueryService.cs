@@ -1,15 +1,11 @@
 ﻿using Core.DataBase.Mongo;
-using Infrastructure.Schedule.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using SharpCompress.Common.Tar;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Application.Queries

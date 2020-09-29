@@ -8,12 +8,9 @@ using Core.Extensions.DependencyInjection;
 using Domain.DataSynchronization;
 using Domain.DataSynchronization.Managers;
 using Domain.Schedule.Entities;
-using Domain.Schedule.Managers;
+using FlytexpressBI.Extensions.DependencyInjection;
 using Infrastructure.Db.Contexts;
-using Infrastructure.Db.Dtoes.Mongo.Bill;
-using Infrastructure.Db.Dtoes.Pg;
 using Infrastructure.Db.Mapper;
-using Infrastructure.Extensions.DependencyInjection;
 using Infrastructure.Schedule.Factroy;
 using Infrastructure.Schedule.Options;
 using Microsoft.AspNetCore.Builder;
@@ -47,12 +44,6 @@ namespace FlytexpressBI
 
             #endregion
 
-            #region 本地缓存注册
-
-            services.AddDbDtoTypeCaches();
-
-            #endregion
-
             #region AutoMapper注册
 
             services.AddAutoMapper(configuration =>
@@ -64,15 +55,13 @@ namespace FlytexpressBI
 
             #region 表同步服务
 
-            services.AddSingleton<UserMoneyRecordSynchronization>();
-            services.AddSingleton<OrderParentSynchronization>();
+            services.AddSynchronizationServices();
 
             #endregion
 
             #region 任务组件注册
 
             services.Configure<DataSynchronizationOptions>(Configuration.GetSection("DataSynchronization"));
-            services.AddScoped<DataSynchornizationJob>();
             services.AddSingleton<IJobFactory, ScheduleJobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
             services.AddTransient(_ => new ScheduleJob

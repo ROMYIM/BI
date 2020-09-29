@@ -33,7 +33,7 @@ namespace Domain.DataSynchronization.Managers
             var periodMoneyInsertData = new LinkedList<PgPeriodMoney>();
 
             using var asyncCursor = await collection.FindDocumentsCursorAsync(
-                d => d[UtcModifyTime] >= startTime && d[UtcModifyTime] < startTime + synchronizeDuration, FindOptions);
+                d => d[UtcModifyTime] >= startTime && d[UtcModifyTime] < startTime + synchronizeDuration, _findOptions);
             while (await asyncCursor.MoveNextAsync())
             {
 
@@ -142,11 +142,11 @@ namespace Domain.DataSynchronization.Managers
                 _logger.LogInformation("转换数据。耗时{}", _stopwatch.Elapsed.TotalSeconds);
 
                 _stopwatch.Restart();
-                var commitCount = _flytBIDbContext.BatchInsert(insertData, GetTableSuffix(startTime));
-                _flytBIDbContext.BatchInsert(feesClassItems, GetTableSuffix(startTime));
-                _flytBIDbContext.BatchInsert(costClassItems, GetTableSuffix(startTime));
-                _flytBIDbContext.BatchInsert(sopIds, GetTableSuffix(startTime));
-                _flytBIDbContext.BatchInsert(periodMoneyInsertData, GetTableSuffix(startTime));
+                var commitCount = await _flytBIDbContext.BatchInsertAsync(insertData, GetTableSuffix(startTime));
+                await _flytBIDbContext.BatchInsertAsync(feesClassItems, GetTableSuffix(startTime));
+                await _flytBIDbContext.BatchInsertAsync(costClassItems, GetTableSuffix(startTime));
+                await _flytBIDbContext.BatchInsertAsync(sopIds, GetTableSuffix(startTime));
+                await _flytBIDbContext.BatchInsertAsync(periodMoneyInsertData, GetTableSuffix(startTime));
                 _stopwatch.Stop();
                 _logger.LogInformation("数据插入。耗时{}", _stopwatch.Elapsed.TotalSeconds);
 

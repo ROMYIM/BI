@@ -31,6 +31,7 @@ namespace FlytexpressBI.Controllers
             _serviceProvider = serviceProvider;
         }
 
+        [HttpGet]
         public async ValueTask<IActionResult> Index()
         {
             await Task.Run(() => 
@@ -42,14 +43,16 @@ namespace FlytexpressBI.Controllers
             return View();
         }
 
+        [HttpGet]
         public IActionResult Privacy()
         {
             return View();
         }
 
-        public OrderParent Order()
+        [HttpGet]
+        public OrderParent Order(string orderId)
         {
-            var order = _mongoDbContext.FirstOrDefault<OrderParent>(o => o.Id == "F802672006160004");
+            var order = _mongoDbContext.FirstOrDefault<OrderParent>(o => o.Id == orderId);
             return order;
         }
 

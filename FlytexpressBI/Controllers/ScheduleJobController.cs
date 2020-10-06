@@ -30,6 +30,7 @@ namespace FlytexpressBI.Controllers
         }
 
         [Route("stop")]
+        [HttpPatch]
         public async Task<IActionResult> Stop()
         {
             var tokenSource = new CancellationTokenSource();
@@ -38,6 +39,7 @@ namespace FlytexpressBI.Controllers
             return Ok("停止任务成功");
         }
 
+        [HttpPatch]
         [Route("restart")]
         public IActionResult Restart()
         {
@@ -48,6 +50,7 @@ namespace FlytexpressBI.Controllers
         }
 
         [Route("")]
+        [HttpGet]
         public IActionResult Index()
         {
             

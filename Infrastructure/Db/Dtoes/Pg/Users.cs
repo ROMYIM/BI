@@ -5,51 +5,125 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Db.Dtoes.Pg
 {
-    public partial class Users
+    /// <summary>
+    /// 用户管理实体类
+    /// </summary>
+    [Table("Users")]
+    public class Users
     {
-        [Key]
-        [Column("_id")]
-        public int Id { get; set; }
-        [StringLength(255)]
-        public string UserName { get; set; }
-        [StringLength(255)]
-        public string CnName { get; set; }
-        [StringLength(255)]
-        public string EnName { get; set; }
-        [StringLength(255)]
-        public string Email { get; set; }
-        [StringLength(255)]
+        /// <summary> 
+        /// 用户序号
+        /// </summary>
+        public int Id { set; get; }
+
+        /// <summary> 
+        /// 登录名
+        /// </summary>
+        public string UserName { set; get; }
+
+        /// <summary> 
+        /// 中文名称
+        /// </summary>
+        public string CnName { set; get; }
+
+        /// <summary> 
+        /// 英文名称
+        /// </summary>
+        public string EnName { set; get; }
+
+        /// <summary> 
+        /// Email
+        /// </summary>
+        public string Email { set; get; }
+
+        /// <summary>
+        /// QQ号码
+        /// </summary>
         public string QqNumber { get; set; }
-        [StringLength(255)]
+
+        /// <summary>
+        /// 联系电话
+        /// </summary>
         public string Phone { get; set; }
-        [StringLength(255)]
-        public string ParentId { get; set; }
-        [StringLength(255)]
-        public string PositionId { get; set; }
-        [Column("RId")]
-        [StringLength(255)]
-        public string Rid { get; set; }
-        [Column("UNumber")]
-        [StringLength(255)]
-        public string Unumber { get; set; }
-        public DateTime? RegDatetime { get; set; }
-        [Column(TypeName = "character varying")]
+
+        /// <summary> 
+        /// 父级ID
+        /// </summary>
+        public string ParentId { set; get; }
+
+        /// <summary> 
+        /// 岗位编号
+        /// </summary>
+        public string PositionId { set; get; }
+
+        /// <summary>
+        /// 收货点编号
+        /// </summary>
+        public string RId { get; set; }
+
+        /// <summary> 
+        /// 员工编号
+        /// </summary>
+        public double UNumber { set; get; }
+
+        /// <summary> 
+        /// 注册时间
+        /// </summary>
+        public DateTime RegDatetime { set; get; }
+
+        /// <summary>
+        /// 公司编号
+        /// </summary>
         public string CompanyId { get; set; }
-        [Column(TypeName = "json")]
-        public string Roleds { get; set; }
-        [Column(TypeName = "json")]
-        public string Permissions { get; set; }
-        public bool? Locked { get; set; }
-        public bool? IsDeleted { get; set; }
-        public bool? VerifyState { get; set; }
-        [StringLength(255)]
+
+        /// <summary> 
+        /// 是否锁定 0=否  1=是
+        /// </summary>
+        public bool Locked { set; get; }
+
+        /// <summary>
+        /// 是否删除
+        /// </summary>
+        public bool IsDeleted { get; set; }
+
+        /// <summary> 
+        /// 审核状态  0=不通过  1=通过
+        /// </summary>
+        public int VerifyState { set; get; }
+
+        /// <summary>
+        /// 审核人编号
+        /// </summary>
         public string VerfiyUserId { get; set; }
-        public DateTime? UpdatePwDate { get; set; }
-        public DateTime? LastLoginDate { get; set; }
-        [StringLength(255)]
-        public string LastLoginIp { get; set; }
-        [Column("UId")]
-        [StringLength(255)]
-        public string Uid { get; set; }
+
+        /// <summary> 
+        /// 密码更新日期
+        /// </summary>
+        public DateTime? UpdatePwDate { set; get; }
+
+        /// <summary> 
+        /// 用户密码
+        /// </summary>
+        public string UPassword { set; get; }
+
+        /// <summary> 
+        /// 是否验证IP  0=否  1=是
+        /// </summary>
+        public bool IsUserLoginIp { set; get; }
+
+        /// <summary> 
+        /// 最后一次登录时间
+        /// </summary>
+        public DateTime LastLoginDate { set; get; }
+
+        /// <summary> 
+        /// 最后一次登录IP
+        /// </summary>
+        public string LastLoginIp { set; get; }
+
+        /// <summary>
+        /// 用户编号（迁移ORACLE用）
+        /// </summary>
+        public string UId { get; set; }
     }
 }

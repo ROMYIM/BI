@@ -42,7 +42,6 @@ namespace Core.Extensions.Database.Query
         /// <returns>查询迭代器</returns>
         public static async Task<IAsyncCursor<BsonDocument>> FindDocumentsCursorAsync(this IMongoCollection<BsonDocument> collection, Expression<Func<BsonDocument, bool>> query, FindOptions<BsonDocument> options = default)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
 
             if (options == default)
                 options = new FindOptions<BsonDocument>
@@ -50,7 +49,11 @@ namespace Core.Extensions.Database.Query
                     BatchSize = 1000
                 };
 
-            var asyncCursor = await collection.FindAsync(filter: query, options: options);
+            IAsyncCursor<BsonDocument> asyncCursor;
+            if (query == null)
+                asyncCursor = await collection.FindAsync(filter: new FilterDefinitionBuilder<BsonDocument>().Empty, options: options);
+            else
+                asyncCursor = await collection.FindAsync(filter: query, options: options);
 
             return asyncCursor;
         }

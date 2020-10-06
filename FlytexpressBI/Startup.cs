@@ -5,8 +5,6 @@ using Application.Services.DataSynchorization;
 using AutoMapper;
 using Core.BackgroundService;
 using Core.Extensions.DependencyInjection;
-using Domain.DataSynchronization;
-using Domain.DataSynchronization.Managers;
 using Domain.Schedule.Entities;
 using FlytexpressBI.Extensions.DependencyInjection;
 using Infrastructure.Db.Contexts;
@@ -37,6 +35,25 @@ namespace FlytexpressBI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            #region 接口文档注册
+
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("BiApiDoc", new Microsoft.OpenApi.Models.OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "BI程序接口",
+                    Description = "方便开发和测试人员测试",
+                    Contact = new Microsoft.OpenApi.Models.OpenApiContact
+                    {
+                        Name = "Yim",
+                        Email = "yanjunrong@flytexpress.com"
+                    },
+                });
+                options.OrderActionsBy(d => d.RelativePath);
+            });
+
+            #endregion
 
             #region 查询服务
 
@@ -117,6 +134,13 @@ namespace FlytexpressBI
             {
                 app.UseExceptionHandler("/Error");
             }
+
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/BiApiDoc/swagger.json", "BI程序接口");
+                options.RoutePrefix = "doc";
+            });
 
             //app.UseExceptionHandler("/Error");
             app.UseStaticFiles();

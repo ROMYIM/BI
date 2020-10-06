@@ -29,17 +29,18 @@ namespace Domain.DataSynchronization
 
         protected override string UtcModifyTime => "UpdateTime";
 
-        protected override async Task<ulong> DoSynchronizeAsync(IMongoCollection<BsonDocument> collection, DateTime synchronizeTime, TimeSpan synchronizeDuration)
+        protected override async Task<ulong> DoSynchronizeAsync(IMongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
         {
-            var tableNameSuffix = GetTableSuffix(synchronizeTime);
+            _findOptions.BatchSize = synchronizeCount;
+            _findOptions.Skip = startIndex;
+
             var syncCount = default(ulong);
 
             var transferRouteInsertData = new LinkedList<PgTransferRoute>();
             var postTypeIdInsertData = new LinkedList<TransferRoutePostTypeId>();
             var customerIdInsertData = new LinkedList<TransferRouteCustomerId>();
 
-            using var asyncCursor = await collection.FindDocumentsCursorAsync(
-                d => d[UtcModifyTime] >= synchronizeTime && d[UtcModifyTime] < synchronizeTime + synchronizeDuration, _findOptions);
+            using var asyncCursor = await collection.FindDocumentsCursorAsync(default, _findOptions);
             while (await asyncCursor.MoveNextAsync())
             {
                 var documents = asyncCursor.Current;
@@ -108,7 +109,7 @@ namespace Domain.DataSynchronization
                     }
                     catch (Exception ex) when (!(ex is DataSynchronizationException))
                     {
-                        throw new DataSynchronizationException(routeId, TableName + "_" + tableNameSuffix, ex);
+                        throw new DataSynchronizationException(routeId, TableName, ex);
                     }
 
                     transferRouteInsertData.AddLast(transferRoute);
@@ -117,9 +118,9 @@ namespace Domain.DataSynchronization
                 _logger.LogInformation("数据转换。耗时{}", _stopwatch.Elapsed.TotalSeconds);
 
                 _stopwatch.Restart();
-                var commitCount = await _flytBIDbContext.BatchInsertAsync(transferRouteInsertData, tableNameSuffix);
-                await _flytBIDbContext.BatchInsertAsync(postTypeIdInsertData, tableNameSuffix);
-                await _flytBIDbContext.BatchInsertAsync(customerIdInsertData, tableNameSuffix);
+                var commitCount = await _flytBIDbContext.BatchInsertAsync(transferRouteInsertData);
+                await _flytBIDbContext.BatchInsertAsync(postTypeIdInsertData);
+                await _flytBIDbContext.BatchInsertAsync(customerIdInsertData);
 
                 _stopwatch.Stop();
                 _logger.LogInformation("数据插入。耗时{}", _stopwatch.Elapsed.TotalSeconds);

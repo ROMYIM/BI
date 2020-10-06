@@ -1,5 +1,6 @@
 ﻿using Core.DataBase.Mongo;
 using Core.Extensions.Database.Query;
+using Domain.DataSynchronization.Abstract;
 using Infrastructure.Db.Contexts;
 using Infrastructure.Exceptions;
 using Infrastructure.Helpers;
@@ -17,7 +18,9 @@ using System.Threading.Tasks;
 
 namespace Domain.DataSynchronization.Managers
 {
-    public class Synchronization<TMongo, TPgSQL> where TMongo : class, new() where TPgSQL : class, new()
+    public class Synchronization<TMongo, TPgSQL> 
+        : ITimeSynchronization<TMongo, TPgSQL>, IIndexSynchronization<TMongo, TPgSQL> 
+        where TMongo : class, new() where TPgSQL : class, new()
     {
 
         #region 字段
@@ -111,6 +114,50 @@ namespace Domain.DataSynchronization.Managers
 
         }
 
+        public virtual Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, int? synchornizationCount = default)
+        {
+            Initialize();
+
+            var token = TokenSource.Token;
+            return Task.Factory.StartNew(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("开始导入{}数据", TableName);
+                    _logger.LogInformation("{}", DateTime.Now);
+
+
+                    ///获取mongo对应的表集合
+                    var mongoDtoType = typeof(TMongo);
+                    var collection = _mongoDbContext.Collection(mongoDtoType);
+
+                    ///计算一个表数据要同步的次数
+                    var totalCount = (synchornizationCount == null ? await collection.EstimatedDocumentCountAsync() : synchornizationCount.Value) - startIndex;
+                    if (synchronizeCountPerTime > totalCount) synchronizeCountPerTime = (int)totalCount;
+
+                    _logger.LogInformation("总数量：{}", totalCount);
+                    _logger.LogInformation("导入中");
+
+                    for (int j = 0; j < totalCount; j += synchronizeCountPerTime, startIndex += synchronizeCountPerTime)
+                    {
+                        if (CheckCancellRequested()) return;
+
+                        _logger.LogInformation("更新索引：{}", startIndex);
+                        await DoSynchronizeAsync(collection, startIndex, synchronizeCountPerTime);
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.Message);
+                    _logger.LogError(ex.StackTrace);
+                }
+                finally { Dispose(); }
+            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        }
+
         /// <summary>
         /// 一般普通数据表的同步
         /// </summary>
@@ -167,6 +214,59 @@ namespace Domain.DataSynchronization.Managers
             }
 
             _logger.LogInformation("更新数量{}", syncCount);
+            return syncCount;
+        }
+
+        protected virtual async Task<ulong> DoSynchronizeAsync(IMongoCollection<BsonDocument> collection, int startIndex, int synchronizeCount)
+        {
+            _findOptions.BatchSize = synchronizeCount;
+            _findOptions.Skip = startIndex;
+            _findOptions.Limit = synchronizeCount;
+            _findOptions.Sort = default;
+
+            var syncCount = default(ulong);
+
+            var asyncCursor = await collection.FindDocumentsCursorAsync(default, _findOptions);
+            while (await asyncCursor.MoveNextAsync())
+            {
+                var documents = asyncCursor.Current;
+                var mongoErrors = new List<(BsonValue, string)>(documents.Count());
+                var insertData = new List<TPgSQL>(documents.Count());
+
+                BsonValue id = null;
+                try
+                {
+                    /// 查询并转换为pg实体
+                    foreach (var document in documents)
+                    {
+
+                        var pgEntity = new TPgSQL();
+                        var properties = typeof(TPgSQL).GetProperties();
+
+                        ///优先构建主键属性
+                        var idElement = document.Elements.Where(d => d.Name == "_id").First();
+                        id = idElement.Value;
+                        var idProperty = properties.Where(p => p.Name == "Id").First();
+                        idProperty.SetValue(pgEntity, idElement.GetValue(idProperty.PropertyType));
+
+                        foreach (var element in document.Elements)
+                        {
+                            var property = properties.Where(p => p.Name.ToLower() == element.Name.ToLower()).FirstOrDefault();
+                            property?.SetValue(pgEntity, element.GetValue(property.PropertyType));
+                        }
+                        insertData.Add(pgEntity);
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new DataSynchronizationException(id, TableName, ex);
+                }
+            
+
+                syncCount += await _flytBIDbContext.BatchInsertAsync(insertData);
+            }
+
             return syncCount;
         }
 
@@ -231,5 +331,6 @@ namespace Domain.DataSynchronization.Managers
             _serviceScope = _serviceProvider.CreateScope();
             _flytBIDbContext = _serviceScope.ServiceProvider.GetRequiredService<FlytBIDbContext>();
         }
+
     }
 }

@@ -91,6 +91,14 @@ namespace FlytexpressBI
                 Type = new JobType { TypeName = "Domain.Schedule.Managers.DataSynchornizationJob" }
             });
 
+            services.AddQuartz(configurator =>
+            {
+                configurator.SchedulerName = "base data synchronization scheduler";
+
+                configurator.UseMicrosoftDependencyInjectionScopedJobFactory();
+                configurator.
+            });
+
             #endregion
 
             #region 后台服务组件注册

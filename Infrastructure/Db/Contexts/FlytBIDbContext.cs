@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Infrastructure.Db.Dtoes.Pg;
+using Infrastructure.Db.Dtoes.Pg.Tongju;
 
 namespace Infrastructure.Db.Contexts
 {
@@ -91,6 +92,15 @@ namespace Infrastructure.Db.Contexts
         public virtual DbSet<Workwechatuser> Workwechatuser { get; set; }
         public virtual DbSet<Zipcode> Zipcode { get; set; }
         public virtual DbSet<Zipcoderule> Zipcoderule { get; set; }
+        public virtual DbSet<TongjuUserMoneyRecord> TongjuUserMoneyRecords { get; set; }
+        public virtual DbSet<TongjuUserInfo> TongjuUserInfos { get; set; }
+
+
+        public virtual DbSet<ScheduleJob> ScheduleJobs { get; set; }
+
+        public virtual DbSet<JobStrategy> Strategies { get; set; }
+
+        public virtual DbSet<JobHistory> Histories { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -103,6 +113,11 @@ namespace Infrastructure.Db.Contexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ScheduleJob>(entity =>
+            {
+                entity.HasIndex(job => new { job.GroupName, job.JobName }).IsUnique();
+            });
+
             modelBuilder.Entity<Abroadorderparent>(entity =>
             {
                 entity.HasNoKey();

@@ -35,6 +35,13 @@ namespace Infrastructure.Helpers
             return originalTableName + "_" + tableNameSuffix;
         }
 
+        public static async Task<ulong> BatchDeleteAsync<T>(this FlytBIDbContext dbContext, string tableSuffix = "", CancellationToken token = default)
+        {
+            var tableName = GetTableName(SqlFormatter<T>.Table, tableSuffix);
+
+            return (ulong)await dbContext.Database.ExecuteSqlRawAsync("delete from {}", tableName);
+        }
+
         public static async Task<ulong> BatchInsertAsync<T>(this FlytBIDbContext dbContext,
             IReadOnlyCollection<T> toInsertData, string tableSuffix = "", CancellationToken token = default)
         {
@@ -105,56 +112,6 @@ namespace Infrastructure.Helpers
 
         }
 
-
-        //public static void BatchInsert(this FlytBIDbContext dbContext,
-        //   ICollection toInsertData, PgDtoTypeCache typeCache, string tableSuffix = "")
-        //{
-        //    if (toInsertData == null) return;
-
-        //    var tableName = GetTableName(typeCache.Table, tableSuffix);
-
-        //    var conn = dbContext.Database.GetDbConnection() as NpgsqlConnection;
-        //    var isSelfControll = false;
-        //    if (conn.State != System.Data.ConnectionState.Open)
-        //    {
-        //        isSelfControll = true;
-        //        conn.Open();
-        //    }
-
-        //    var idRecords = new string[toInsertData.Count];
-        //    var i = 0;
-
-        //    try
-        //    {
-
-        //        var copyCommand = BuildBulkCopyCommand(typeCache.Fields, tableName);
-        //        using var writer = conn.BeginBinaryImport(copyCommand);
-        //        foreach (var data in toInsertData)
-        //        {
-        //            writer.StartRow();
-        //            foreach (var field in typeCache.Fields)
-        //            {
-        //                var fieldInfo = field.Field;
-        //                var fieldValue = fieldInfo.GetValue(data);
-        //                if (field.IsKey) idRecords[i++] = fieldValue.ToString();
-        //                writer.Write(fieldValue);
-        //            }
-        //            //await writer.WriteAsync(field.Field.GetValue(data));
-
-        //        }
-        //        writer.Complete();
-        //        //await tran.CommitAsync();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new DataSynchronizationException(idRecords, tableName, ex);
-        //    }
-        //    finally
-        //    {
-        //        if (isSelfControll) conn.Close();
-        //    }
-
-        //}
 
         private static string BuildBulkCopyCommand(EntityFeildInfo[] fields, string tableName)
         {

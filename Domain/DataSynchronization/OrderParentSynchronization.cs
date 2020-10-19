@@ -1,6 +1,6 @@
 ﻿using Core.DataBase.Mongo;
 using Core.Extensions.Database.Query;
-using Core.Extensions.Encode;
+using Core.Extensions.Text;
 using Domain.DataSynchronization.Managers;
 using Infrastructure.Db.Dtoes.Pg;
 using Infrastructure.Exceptions;

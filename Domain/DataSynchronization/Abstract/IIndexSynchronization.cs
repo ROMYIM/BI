@@ -12,5 +12,10 @@ namespace Domain.DataSynchronization.Abstract
         Task SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, int? synchornizationCount = default);
     }
 
+    public interface IIndexSynchronization<TPg> : ISynchronization 
+    {
+        Task<(ulong deleteCount, ulong insertCount)> SynchronizeDataAsync(int startIndex, int synchronizeCountPerTime, int? synchornizationCount = default);
+    }
+
     public interface IIndexSynchronization<TMongo, TPg> : IIndexSynchronization { }
 }

@@ -171,6 +171,29 @@ namespace Core.DataBase.Mongo
         }
 
         /// <summary>
+        /// 按条件查询返回结果集
+        /// </summary>
+        /// <typeparam name="T">查询和返回的实体类型</typeparam>
+        /// <param name="filter">筛选、查询条件</param>
+        /// <param name="selector">结果集映射表达式</param>
+        /// <returns></returns>
+        public async Task<List<T>> FindAsync<T>(Expression<Func<T, bool>> filter, Expression<Func<T, T>> selector = default)
+        {
+            var findOptions = default(FindOptions<T>);
+            if (selector != default)
+            {
+                findOptions = new FindOptions<T>
+                {
+                    Projection = new ProjectionDefinitionBuilder<T>().Expression(selector)
+                };
+            }
+
+            var cursor = await _database.GetCollection<T>(GetTableName(typeof(T)), _collectionSettings).FindAsync(filter, findOptions);
+            return await cursor.ToListAsync();
+
+        }
+
+        /// <summary>
         /// 返回单个查询结果
         /// </summary>
         /// <param name="filter"></param>

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
 using Core.BackgroundService;
+using Infrastructure.Schedule.Service;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ namespace FlytexpressBI.Controllers
     {
         private readonly ILogger _logger;
 
-        private readonly IDataSynchorizationService _dataSyncService;
+        private readonly IScheduleService _dataSyncService;
 
         public ScheduleJobController(
             ILoggerFactory loggerFactory,

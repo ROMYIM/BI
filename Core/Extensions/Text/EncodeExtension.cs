@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Core.Extensions.Encode
+namespace Core.Extensions.Text
 {
-    public static class StringExtension
+    public static class EncodeExtension
     {
         public static string ToUTF8(this string originalString)
         {

@@ -7,6 +7,8 @@ namespace Domain.DataSynchronization.Abstract
 {
     public interface ISynchronization
     {
-        CancellationTokenSource TokenSource { get; }
+        internal CancellationTokenSource TokenSource { get; }
+
+        internal string MongoTable { get; set; }
     }
 }

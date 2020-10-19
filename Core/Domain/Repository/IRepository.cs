@@ -7,12 +7,14 @@ namespace Core.Domain.Repository
 {
     public interface IRepository<TEntity, TKey>
     {
-        Task AddAsync(TEntity entity);
+        ValueTask AddAsync(TEntity entity);
 
-        Task<TEntity> FirstOrDefaultAsync(TKey id);
+        ValueTask<TEntity> FirstOrDefaultAsync(TKey id);
 
-        Task UpdateAsync(TEntity entity);
+        ValueTask UpdateAsync(TEntity entity);
 
-        Task DeleteAsync(TKey key);
+        ValueTask DeleteAsync(TEntity entity);
+
+        Task<int> SaveChangesAsync();
     }
 }

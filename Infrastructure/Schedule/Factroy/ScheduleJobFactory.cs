@@ -16,12 +16,12 @@ namespace Infrastructure.Schedule.Factroy
 
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<JobKey, IServiceScope> _jobScopes;
+        private readonly ConcurrentDictionary<IJob, IServiceScope> _jobScopes;
 
         public ScheduleJobFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
         {
             _container = serviceProvider;
-            _jobScopes = new ConcurrentDictionary<JobKey, IServiceScope>();
+            _jobScopes = new ConcurrentDictionary<IJob, IServiceScope>();
             _logger = loggerFactory.CreateLogger(GetType());
         }
 
@@ -39,15 +39,17 @@ namespace Infrastructure.Schedule.Factroy
 
 
             _logger.LogDebug("任务开始。{}", DateTime.Now.ToString("G"));
-            return _container.GetRequiredService(bundle.JobDetail.JobType) as IJob;
+            var scope = _container.CreateScope();
+            var job = scope.ServiceProvider.GetRequiredService(bundle.JobDetail.JobType) as IJob;
+            return job;
         }
 
         public void ReturnJob(IJob job)
         {
-            //if (job is IDetailJob scopedJob && _jobScopes.TryRemove(scopedJob.DetailInformation.Key, out var scope))
-            //{
-            //    scope.Dispose();
-            //}
+            if (_jobScopes.TryRemove(job, out var scope))
+            {
+                scope.Dispose();
+            }
             _logger.LogDebug("任务结束。{}", DateTime.Now.ToString("G"));
         }
 

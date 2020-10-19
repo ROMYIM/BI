@@ -1,4 +1,4 @@
-﻿using Core.Extensions.Encode;
+﻿using Core.Extensions.Text;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;

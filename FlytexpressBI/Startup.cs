@@ -2,6 +2,7 @@ using System;
 using Application.Queries;
 using Application.Services.DataSynchonization;
 using Application.Services.DataSynchorization;
+using Application.Services.ScheduleJobs;
 using AutoMapper;
 using Core.BackgroundService;
 using Core.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ using FlytexpressBI.Extensions.DependencyInjection;
 using Infrastructure.Db.Contexts;
 using Infrastructure.Db.Mapper;
 using Infrastructure.Schedule.Factroy;
-using Infrastructure.Schedule.Options;
+using Infrastructure.Schedule.Service;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -78,26 +79,30 @@ namespace FlytexpressBI
 
             #region 任务组件注册
 
-            services.Configure<DataSynchronizationOptions>(Configuration.GetSection("DataSynchronization"));
             services.AddSingleton<IJobFactory, ScheduleJobFactory>();
             services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
-            services.AddTransient(_ => new ScheduleJob
-            {
-                Id = 1,
-                JobName = "数据定时同步",
-                CreationTime = DateTime.Now,
-                Status = JobStatus.Init,
-                CronExpression = "0/5 * * * * ?",
-                Type = new JobType { TypeName = "Domain.Schedule.Managers.DataSynchornizationJob" }
-            });
+            //services.AddTransient(_ => new ScheduleJob
+            //{
+            //    Id = 1,
+            //    JobName = "数据定时同步",
+            //    CreationTime = DateTime.Now,
+            //    Status = JobStatus.Init,
+            //    CronExpression = "0/5 * * * * ?",
+            //    Type = new JobType { TypeName = "Domain.Schedule.Managers.DataSynchornizationJob" }
+            //});
 
             services.AddQuartz(configurator =>
             {
                 configurator.SchedulerName = "base data synchronization scheduler";
 
-                configurator.UseMicrosoftDependencyInjectionScopedJobFactory();
-                configurator.
+                configurator.UseMicrosoftDependencyInjectionScopedJobFactory(options => options.AllowDefaultConstructor = false);
+                configurator.AddJob<BaseDataSynchronizationJob>(options => options.WithDescription("基础数据同步").StoreDurably());
+
+                configurator.UseSimpleTypeLoader();
+                configurator.UseDedicatedThreadPool(options => options.MaxConcurrency = 100);
+                configurator.UseInMemoryStore();
             });
+
 
             #endregion
 
@@ -105,7 +110,7 @@ namespace FlytexpressBI
 
             //services.AddHostedService<StartupService>();
             services.AddSingleton<DataSynchronizationService>();
-            services.AddSingleton<IDataSynchorizationService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
+            services.AddSingleton<IScheduleService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
             services.AddSingleton<IAutoStartupService, DataSynchronizationService>(container => container.GetService<DataSynchronizationService>());
 
             #endregion

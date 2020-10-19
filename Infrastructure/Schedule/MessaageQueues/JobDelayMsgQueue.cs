@@ -16,7 +16,7 @@ namespace Infrastructure.Schedule.MessaageQueues
 
         public JobDelayMsgQueue()
         {
-            _queues = new Dictionary<JobKey, ConcurrentQueue<IMessageSource<TJobMessage>>>();
+            _queues = new Dictionary<JobKey, ConcurrentQueue<IMessageSource<TJobMessage>>>(); 
         }
 
         public void ConsumeMessage(JobKey msgKey, IEnumerable<IMessageConsumer<TJobMessage>> consumers)
